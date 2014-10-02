@@ -1,3 +1,6 @@
+import rbtree
+from .errors import NotFoundError
+
 class Repository(object):
     def __init__(self, events=None, accounts=None, orders=None, exchanges=None):
         self.revision = revision
