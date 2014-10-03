@@ -24,12 +24,13 @@ class Repository(object):
     def flush(self):
         pass
 
-def EntitiesSet(object):
+class EntitiesSet(object):
     def __init__(self, name, entities=None):
         self.entities = entities or {}
         self.name = name
 
     def add(self, entity):
+        assert hasattr(entity, 'id')
         self.entities[entity.id] = entity
 
     def remove(self, entity):
@@ -41,7 +42,7 @@ def EntitiesSet(object):
             raise NotFoundError("%s#%d not found" % (self.name, id))
         return entity
 
-def Account(object):
+class Account(object):
     def __init__(self, id, active_balances=None, frozen_balances=None):
         self.id = id
         self.active_balances = active_balances or {}
