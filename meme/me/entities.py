@@ -94,20 +94,29 @@ class Exchange(object):
         return "%s-%s" % (self.coin_type, self.price_type)
 
     def enqueue(self, order):
-        if order.exchange_id != self.id:
-            raise ValueError("Order#exchange_id<%s> mismatch with Exchange<%s>" % (order.exchange_id, self.id))
-        if type(order) is BidOrder:
-            rbtree = self.bids
-        elif type(order) is AskOrder:
-            rbtree = self.asks
-        else:
-            raise ValueError("argument is not an Order")
-        queue = rbtree.get(order.price, collections.deque())
+        rbtree = self._find_rbtree(order)
+        queue = rbtree.setdefault(order.price, collections.deque())
         queue.append(order.id)
         rbtree[order.price] = queue
 
     def dequeue(self, order):
-        pass
+        rbtree = self._find_rbtree(order)
+        queue = rbtree.get(order.price)
+        if not queue or not order.id in queue:
+            return
+        queue.remove(order.id)
+        if queue == collections.deque():
+            del rbtree[order.price]
 
     def match(self):
         pass
+
+    def _find_rbtree(self, order):
+        if order.exchange_id != self.id:
+            raise ValueError("Order#exchange_id<%s> mismatch with Exchange<%s>" % (order.exchange_id, self.id))
+        if type(order) is BidOrder:
+            return self.bids
+        elif type(order) is AskOrder:
+            return self.asks
+        else:
+            raise ValueError("argument is not an Order")
