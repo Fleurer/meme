@@ -49,14 +49,19 @@ class Account(object):
         self.frozen_balances = frozen_balances or {}
 
 class Order(object):
-    def __init__(self, id, account_id, coin_type, price_type, fee_rate, price, amount, rest_amount):
+    def __init__(self, id, account_id, coin_type, price_type, price, amount, rest_amount=None, fee_rate=0.001):
         self.id = id
         self.account_id = account_id
         self.coin_type = coin_type
         self.price_type = price_type
         self.price = price
         self.amount = amount
-        self.rest_amount = amount
+        self.rest_amount = rest_amount or amount
+        self.fee_rate = fee_rate
+
+    @property
+    def exchange_id(self):
+        return "%s-%s" % (self.coin_type, self.price_type)
 
 class BidOrder(Order):
     @property
@@ -77,9 +82,30 @@ class AskOrder(Order):
         return self.coin_type
 
 class Exchange(object):
-    def __init__(self, id, bids_queue={}, asks_queue={}):
-        self.bids_queue = rbtree.rbtree(bids_queue)
-        self.asks_queue = rbtree.rbtree(asks_queue)
+    def __init__(self, coin_type, price_type, bids_queue=None, asks_queue=None):
+        self.coin_type = coin_type
+        self.price_type = price_type
+        self.bids_queue = rbtree.rbtree(bids_queue or {})
+        self.asks_queue = rbtree.rbtree(asks_queue or {})
+
+    @property
+    def id(self):
+        return "%s-%s" % (self.coin_type, self.price_type)
+
+    def enqueue(self, order):
+        if order.exchange_id != self.id:
+            raise ValueError("Order#exchange_id<%s> mismatch with Exchange<%s>" % (order.exchange_id, self.id))
+        if type(order) is BidOrder:
+            queue = self.bids_queue
+        elif type(order) is AskOrder:
+            queue = self.asks_queue
+        else:
+            raise ValueError("argument is not an Order")
+        bucket = queue.get(order.price, [])
+        bucket.append(order.id)
+
+    def dequeue(self, order):
+        pass
 
     def match(self):
         pass

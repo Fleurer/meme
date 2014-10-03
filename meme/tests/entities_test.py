@@ -1,6 +1,6 @@
 import unittest
 from collections import namedtuple
-from meme.me.entities import EntitiesSet
+from meme.me.entities import EntitiesSet, AskOrder, Exchange
 from meme.me.errors import NotFoundError
 
 class TestEntitiesSet(unittest.TestCase):
@@ -20,6 +20,16 @@ class TestEntitiesSet(unittest.TestCase):
         with self.assertRaises(NotFoundError):
             entities_set.find(2)
         entities_set.remove(5)
+
+class TestExchange(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_enqueue(self):
+        ask = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
+        exchange = Exchange('ltc', 'btc')
+        self.assertEqual(exchange.id, 'ltc-btc')
+        exchange.enqueue(ask)
 
 if __name__ == '__main__':
     unittest.main()
