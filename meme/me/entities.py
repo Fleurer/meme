@@ -33,8 +33,8 @@ class EntitiesSet(object):
         assert hasattr(entity, 'id')
         self.entities[entity.id] = entity
 
-    def remove(self, entity):
-        del self.entities[entity.id]
+    def remove(self, id):
+        self.entities.pop(id, None)
 
     def find(self, id):
         entity = self.entities.get(id)

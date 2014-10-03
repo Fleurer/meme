@@ -16,6 +16,10 @@ class TestEntitiesSet(unittest.TestCase):
         self.assertEqual('world', entities_set.find(2).title)
         with self.assertRaises(NotFoundError):
             entities_set.find(3)
+        entities_set.remove(2)
+        with self.assertRaises(NotFoundError):
+            entities_set.find(2)
+        entities_set.remove(5)
 
 if __name__ == '__main__':
     unittest.main()
