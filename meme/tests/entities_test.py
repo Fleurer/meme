@@ -21,6 +21,13 @@ class TestEntitiesSet(unittest.TestCase):
             entities_set.find(2)
         entities_set.remove(5)
 
+    def test_add_an_order(self):
+        ask1 = AskOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1)
+        entities_set = EntitiesSet('Order')
+        entities_set.add(ask1)
+        entities_set.add(ask1)
+        entities_set.find(2)
+
 class TestExchange(unittest.TestCase):
     def setUp(self):
         self.exchange = Exchange('ltc', 'btc')
