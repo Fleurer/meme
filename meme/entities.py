@@ -48,17 +48,37 @@ def Account(object):
         self.frozen_balances = frozen_balances or {}
 
 class Order(object):
-    def __init__(self, id, account_id, price, amount, rest_amount):
+    def __init__(self, id, account_id, coin_type, price_type, fee_rate, price, amount, rest_amount):
         self.id = id
         self.account_id = account_id
+        self.coin_type = coin_type
+        self.price_type = price_type
         self.price = price
         self.amount = amount
         self.rest_amount = amount
 
+class BidOrder(Order):
+    @property
+    def income_type(self):
+        return self.coin_type
+
+    @property
+    def outcome_type(self):
+        return self.price_type
+
+class AskOrder(Order):
+    @property
+    def income_type(self):
+        return self.price_type
+
+    @property
+    def outcome_type(self):
+        return self.coin_type
+
 class Exchange(object):
-    def __init__(self, id, bids={}, asks={}):
-        self.bids = rbtree.rbtree(bids)
-        self.asks = rbtree.rbtree(asks)
+    def __init__(self, id, bids_queue={}, asks_queue={}):
+        self.bids_queue = rbtree.rbtree(bids_queue)
+        self.asks_queue = rbtree.rbtree(asks_queue)
 
     def match(self):
         pass
