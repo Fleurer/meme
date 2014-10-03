@@ -1,6 +1,6 @@
 import unittest
 from collections import namedtuple
-from meme.me.entities import EntitiesSet, AskOrder, Exchange
+from meme.me.entities import EntitiesSet, AskOrder, BidOrder, Exchange
 from meme.me.errors import NotFoundError
 
 class TestEntitiesSet(unittest.TestCase):
@@ -33,8 +33,8 @@ class TestExchange(unittest.TestCase):
         ask1 = AskOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1)
         self.exchange.enqueue(ask0)
         self.exchange.enqueue(ask1)
-        self.assertEqual(self.exchange.asks_queue.keys(), [0.1])
-        self.assertEqual(self.exchange.asks_queue.values(), [[1, 2]])
+        self.assertEqual(self.exchange.asks.keys(), [0.1])
+        self.assertEqual(self.exchange.asks.values(), [[1, 2]])
 
     def test_enqueue1(self):
         ask0 = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
@@ -43,9 +43,18 @@ class TestExchange(unittest.TestCase):
         self.exchange.enqueue(ask0)
         self.exchange.enqueue(ask1)
         self.exchange.enqueue(ask2)
-        self.assertEqual(sorted(self.exchange.asks_queue.keys()), [0.1, 0.2])
-        self.assertEqual(sorted(self.exchange.asks_queue.values()), [[1, 2], [3]])
+        self.assertEqual(sorted(self.exchange.asks.keys()), [0.1, 0.2])
+        self.assertEqual(sorted(self.exchange.asks.values()), [[1, 2], [3]])
 
+    def test_enqueue2(self):
+        bid0 = BidOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
+        bid1 = BidOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1)
+        bid2 = BidOrder(3, 1, 'ltc', 'btc', price=0.2, amount=1)
+        self.exchange.enqueue(bid0)
+        self.exchange.enqueue(bid1)
+        self.exchange.enqueue(bid2)
+        self.assertEqual(sorted(self.exchange.bids.keys()), [0.1, 0.2])
+        self.assertEqual(sorted(self.exchange.bids.values()), [[1, 2], [3]])
 
 if __name__ == '__main__':
     unittest.main()

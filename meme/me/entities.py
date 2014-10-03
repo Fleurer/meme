@@ -82,11 +82,11 @@ class AskOrder(Order):
         return self.coin_type
 
 class Exchange(object):
-    def __init__(self, coin_type, price_type, bids_queue=None, asks_queue=None):
+    def __init__(self, coin_type, price_type, bids=None, asks=None):
         self.coin_type = coin_type
         self.price_type = price_type
-        self.bids_queue = rbtree.rbtree(bids_queue or {})
-        self.asks_queue = rbtree.rbtree(asks_queue or {})
+        self.bids = rbtree.rbtree(bids or {})
+        self.asks = rbtree.rbtree(asks or {})
 
     @property
     def id(self):
@@ -96,9 +96,9 @@ class Exchange(object):
         if order.exchange_id != self.id:
             raise ValueError("Order#exchange_id<%s> mismatch with Exchange<%s>" % (order.exchange_id, self.id))
         if type(order) is BidOrder:
-            queue = self.bids_queue
+            queue = self.bids
         elif type(order) is AskOrder:
-            queue = self.asks_queue
+            queue = self.asks
         else:
             raise ValueError("argument is not an Order")
         bucket = queue.get(order.price, [])
