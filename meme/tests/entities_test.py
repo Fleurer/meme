@@ -29,8 +29,8 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(self.exchange.id, 'ltc-btc')
 
     def test_enqueue_and_dequeue1(self):
-        ask0 = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
         ask1 = AskOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1)
+        ask0 = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
         self.exchange.enqueue(ask0)
         self.exchange.enqueue(ask1)
         self.assertEqual(self.exchange.asks.keys(), [0.1])
@@ -73,6 +73,16 @@ class TestExchange(unittest.TestCase):
         self.exchange.enqueue(bid2)
         self.assertEqual(sorted(self.exchange.bids.keys()), [0.1, 0.2])
         self.assertEqual(sorted(self.exchange.bids.values()), [deque([1, 2]), deque([3])])
+
+    def test_match(self):
+        self.exchange.enqueue(BidOrder(1, 1, 'ltc', 'btc', price=0.2, amount=1))
+        self.exchange.enqueue(BidOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1))
+        self.exchange.enqueue(BidOrder(3, 1, 'ltc', 'btc', price=0.3, amount=4))
+        self.exchange.enqueue(BidOrder(4, 1, 'ltc', 'btc', price=0.3, amount=1))
+        self.exchange.enqueue(AskOrder(5, 1, 'ltc', 'btc', price=0.2, amount=1))
+        self.exchange.enqueue(AskOrder(6, 1, 'ltc', 'btc', price=0.3, amount=1))
+        self.exchange.enqueue(AskOrder(7, 1, 'ltc', 'btc', price=0.3, amount=1))
+        self.assertEqual(self.exchange.match(), (3, 5))
 
 if __name__ == '__main__':
     unittest.main()

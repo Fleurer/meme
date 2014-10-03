@@ -1,3 +1,4 @@
+# coding: utf-8
 import rbtree
 import collections
 from .errors import NotFoundError
@@ -108,8 +109,15 @@ class Exchange(object):
         if queue == collections.deque():
             del rbtree[order.price]
 
+    # 最高买价大于等于最低卖价
     def match(self):
-        pass
+        bid_price = self.bids.max()
+        ask_price = self.asks.min()
+        if bid_price >= ask_price:
+            bid_id = self.bids[bid_price][0]
+            ask_id = self.asks[ask_price][0]
+            return (bid_id, ask_id)
+        return None
 
     def _find_rbtree(self, order):
         if order.exchange_id != self.id:
