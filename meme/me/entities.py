@@ -129,6 +129,7 @@ class Exchange(object):
         else:
             raise ValueError("argument is not an Order")
 
+    # 当同价格的队列为空时，删除红黑树中的键
     def _discard(self, rbtree, price, order_id):
         queue = rbtree.get(price)
         if not queue or not order_id in queue:
