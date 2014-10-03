@@ -23,13 +23,17 @@ class TestEntitiesSet(unittest.TestCase):
 
 class TestExchange(unittest.TestCase):
     def setUp(self):
-        pass
+        self.exchange = Exchange('ltc', 'btc')
+
+    def test_exchange_id(self):
+        self.assertEqual(self.exchange.id, 'ltc-btc')
 
     def test_enqueue(self):
-        ask = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
-        exchange = Exchange('ltc', 'btc')
-        self.assertEqual(exchange.id, 'ltc-btc')
-        exchange.enqueue(ask)
+        ask0 = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
+        ask1 = AskOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1)
+        self.exchange.enqueue(ask0)
+        self.exchange.enqueue(ask1)
+        self.assertEqual(self.exchange.asks_queue.values(), [[1, 2]])
 
 if __name__ == '__main__':
     unittest.main()

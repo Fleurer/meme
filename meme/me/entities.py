@@ -103,6 +103,7 @@ class Exchange(object):
             raise ValueError("argument is not an Order")
         bucket = queue.get(order.price, [])
         bucket.append(order.id)
+        queue[order.price] = bucket
 
     def dequeue(self, order):
         pass
