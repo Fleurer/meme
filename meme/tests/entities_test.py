@@ -28,12 +28,24 @@ class TestExchange(unittest.TestCase):
     def test_exchange_id(self):
         self.assertEqual(self.exchange.id, 'ltc-btc')
 
-    def test_enqueue(self):
+    def test_enqueue0(self):
         ask0 = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
         ask1 = AskOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1)
         self.exchange.enqueue(ask0)
         self.exchange.enqueue(ask1)
+        self.assertEqual(self.exchange.asks_queue.keys(), [0.1])
         self.assertEqual(self.exchange.asks_queue.values(), [[1, 2]])
+
+    def test_enqueue1(self):
+        ask0 = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
+        ask1 = AskOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1)
+        ask2 = AskOrder(3, 1, 'ltc', 'btc', price=0.2, amount=1)
+        self.exchange.enqueue(ask0)
+        self.exchange.enqueue(ask1)
+        self.exchange.enqueue(ask2)
+        self.assertEqual(sorted(self.exchange.asks_queue.keys()), [0.1, 0.2])
+        self.assertEqual(sorted(self.exchange.asks_queue.values()), [[1, 2], [3]])
+
 
 if __name__ == '__main__':
     unittest.main()
