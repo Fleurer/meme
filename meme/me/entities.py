@@ -1,4 +1,5 @@
 import rbtree
+import collections
 from .errors import NotFoundError
 
 class Repository(object):
@@ -96,14 +97,14 @@ class Exchange(object):
         if order.exchange_id != self.id:
             raise ValueError("Order#exchange_id<%s> mismatch with Exchange<%s>" % (order.exchange_id, self.id))
         if type(order) is BidOrder:
-            queue = self.bids
+            rbtree = self.bids
         elif type(order) is AskOrder:
-            queue = self.asks
+            rbtree = self.asks
         else:
             raise ValueError("argument is not an Order")
-        bucket = queue.get(order.price, [])
-        bucket.append(order.id)
-        queue[order.price] = bucket
+        queue = rbtree.get(order.price, collections.deque())
+        queue.append(order.id)
+        rbtree[order.price] = queue
 
     def dequeue(self, order):
         pass
