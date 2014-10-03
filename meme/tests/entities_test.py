@@ -82,7 +82,9 @@ class TestExchange(unittest.TestCase):
         self.exchange.enqueue(AskOrder(5, 1, 'ltc', 'btc', price=0.2, amount=1))
         self.exchange.enqueue(AskOrder(6, 1, 'ltc', 'btc', price=0.3, amount=1))
         self.exchange.enqueue(AskOrder(7, 1, 'ltc', 'btc', price=0.3, amount=1))
-        self.assertEqual(self.exchange.match(), (3, 5))
+        self.assertEqual(self.exchange.match(pop=True), (3, 5))
+        self.assertEqual(self.exchange.match(pop=True), (4, 6))
+        self.assertEqual(self.exchange.match(pop=True), None)
 
 if __name__ == '__main__':
     unittest.main()

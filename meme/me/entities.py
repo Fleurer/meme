@@ -102,20 +102,20 @@ class Exchange(object):
 
     def dequeue(self, order):
         rbtree = self._find_rbtree(order)
-        queue = rbtree.get(order.price)
-        if not queue or not order.id in queue:
-            return
-        queue.remove(order.id)
-        if queue == collections.deque():
-            del rbtree[order.price]
+        self._discard(rbtree, order.price, order.id)
 
     # 最高买价大于等于最低卖价
-    def match(self):
+    def match(self, pop=False):
         bid_price = self.bids.max()
         ask_price = self.asks.min()
         if bid_price >= ask_price:
-            bid_id = self.bids[bid_price][0]
-            ask_id = self.asks[ask_price][0]
+            bids_queue = self.bids[bid_price]
+            asks_queue = self.asks[ask_price]
+            bid_id = bids_queue[0]
+            ask_id = asks_queue[0]
+            if pop:
+                self._discard(self.bids, bid_price, bid_id)
+                self._discard(self.asks, ask_price, ask_id)
             return (bid_id, ask_id)
         return None
 
@@ -128,3 +128,11 @@ class Exchange(object):
             return self.asks
         else:
             raise ValueError("argument is not an Order")
+
+    def _discard(self, rbtree, price, order_id):
+        queue = rbtree.get(price)
+        if not queue or not order_id in queue:
+            return
+        queue.remove(order_id)
+        if queue == collections.deque():
+            del rbtree[price]
