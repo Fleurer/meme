@@ -1,4 +1,5 @@
 import unittest
+from decimal import Decimal
 from collections import namedtuple, deque
 from meme.me.entities import EntitiesSet, AskOrder, BidOrder, Exchange
 from meme.me.errors import NotFoundError
@@ -40,10 +41,10 @@ class TestExchange(unittest.TestCase):
         ask0 = AskOrder(1, 1, 'ltc', 'btc', price=0.1, amount=1)
         self.exchange.enqueue(ask0)
         self.exchange.enqueue(ask1)
-        self.assertEqual(self.exchange.asks.keys(), [0.1])
+        self.assertEqual(self.exchange.asks.keys(), [Decimal('0.1')])
         self.assertEqual(self.exchange.asks.values(), [deque([1, 2])])
         self.exchange.dequeue(ask0)
-        self.assertEqual(self.exchange.asks.keys(), [0.1])
+        self.assertEqual(self.exchange.asks.keys(), [Decimal('0.1')])
         self.assertEqual(self.exchange.asks.values(), [deque([2])])
         self.exchange.dequeue(ask1)
         self.assertEqual(self.exchange.asks.keys(), [])
@@ -53,10 +54,10 @@ class TestExchange(unittest.TestCase):
         bid1 = BidOrder(2, 1, 'ltc', 'btc', price=0.1, amount=1)
         self.exchange.enqueue(bid0)
         self.exchange.enqueue(bid1)
-        self.assertEqual(self.exchange.bids.keys(), [0.1])
+        self.assertEqual(map(float, self.exchange.bids.keys()), [0.1])
         self.assertEqual(self.exchange.bids.values(), [deque([1, 2])])
         self.exchange.dequeue(bid0)
-        self.assertEqual(self.exchange.bids.keys(), [0.1])
+        self.assertEqual(map(float, self.exchange.bids.keys()), [0.1])
         self.assertEqual(self.exchange.bids.values(), [deque([2])])
         self.exchange.dequeue(bid1)
         self.assertEqual(self.exchange.bids.keys(), [])
@@ -68,7 +69,7 @@ class TestExchange(unittest.TestCase):
         self.exchange.enqueue(ask0)
         self.exchange.enqueue(ask1)
         self.exchange.enqueue(ask2)
-        self.assertEqual(sorted(self.exchange.asks.keys()), [0.1, 0.2])
+        self.assertEqual(sorted(map(float, self.exchange.asks.keys())), [0.1, 0.2])
         self.assertEqual(sorted(self.exchange.asks.values()), [deque([1, 2]), deque([3])])
 
     def test_enqueue2(self):
@@ -78,7 +79,7 @@ class TestExchange(unittest.TestCase):
         self.exchange.enqueue(bid0)
         self.exchange.enqueue(bid1)
         self.exchange.enqueue(bid2)
-        self.assertEqual(sorted(self.exchange.bids.keys()), [0.1, 0.2])
+        self.assertEqual(sorted(map(float, self.exchange.bids.keys())), [0.1, 0.2])
         self.assertEqual(sorted(self.exchange.bids.values()), [deque([1, 2]), deque([3])])
 
     def test_match(self):
@@ -92,6 +93,28 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(self.exchange.match(pop=True), (3, 5))
         self.assertEqual(self.exchange.match(pop=True), (4, 6))
         self.assertEqual(self.exchange.match(pop=True), None)
+
+    def test_compute_deals1(self):
+        bid = BidOrder(1, 1, 'ltc', 'btc', price=0.3, amount=1.1, timestamp = 2)
+        ask = AskOrder(2, 1, 'ltc', 'btc', price=0.2, amount=1, timestamp = 1)
+        bid_deal, ask_deal = Exchange.compute_deals(bid, ask)
+        self.assertEqual(float(bid_deal.price), 0.2)
+        self.assertEqual(float(bid_deal.income), 1)
+        self.assertEqual(float(bid_deal.outcome), 0.2002)
+        self.assertEqual(float(bid_deal.fee), 0.0002)
+        self.assertEqual(float(ask_deal.price), 0.2)
+        self.assertEqual(float(ask_deal.income), 0.1998)
+        self.assertEqual(float(ask_deal.outcome), 1)
+        self.assertEqual(float(ask_deal.fee), 0.0002)
+        bid.append_deal(bid_deal)
+        self.assertEqual(float(bid.rest_amount), 0.1)
+        ask = AskOrder(3, 1, 'ltc', 'btc', price=0.2, amount=1, timestamp = 3)
+        bid_deal, ask_deal = Exchange.compute_deals(bid, ask)
+        self.assertEqual(float(bid_deal.price), 0.3)
+        self.assertEqual(float(bid_deal.income), 0.1)
+        self.assertEqual(float(bid_deal.outcome), 0.03003)
+        self.assertEqual(float(bid_deal.fee), 0.00003)
+
 
 if __name__ == '__main__':
     unittest.main()

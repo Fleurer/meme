@@ -20,4 +20,4 @@ class BalanceDiff(object):
         assert self.new_active >= 0
         return cls(account_id, coin_type, old_active, old_frozen, new_active, new_frozen)
 
-Deal = namedtuple('Deal', ['pair_id', 'price', 'income', 'outcome', 'fee', 'timestamp'])
+Deal = namedtuple('Deal', ['pair_id', 'price', 'amount', 'income', 'outcome', 'fee', 'timestamp'])

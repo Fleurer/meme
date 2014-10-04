@@ -1,7 +1,8 @@
 # coding: utf-8
-import rbtree
+import time
 import collections
 from decimal import Decimal, ROUND_DOWN
+import rbtree
 from .errors import NotFoundError
 from .values import Deal
 from .consts import PRECISION_EXP
@@ -54,22 +55,27 @@ class Account(object):
         self.frozen_balances = frozen_balances or {}
 
 class Order(object):
-    def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, deals=None):
+    def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, deals=None, timestamp=None):
         self.id = id
         self.account_id = account_id
         self.coin_type = coin_type
         self.price_type = price_type
-        self.price = Decimal(price)
-        self.amount = Decimal(amount)
+        self.price = Decimal(price).quantize(PRECISION_EXP)
+        self.amount = Decimal(amount).quantize(PRECISION_EXP, ROUND_DOWN)
         self.fee_rate = Decimal(fee_rate)
         self.deals = deals or []
+        self.timestamp = timestamp or int(time.time())
 
     @property
     def exchange_id(self):
         return "%s-%s" % (self.coin_type, self.price_type)
 
+    @property
+    def rest_amount(self):
+        return self.amount - sum([d.amount for d in self.deals])
+
     def append_deal(self, deal):
-        pass
+        self.deals.append(deal)
 
     def compute_balance_diff_on_create(self):
         pass
@@ -89,6 +95,9 @@ class BidOrder(Order):
     def outcome_type(self):
         return self.price_type
 
+    def compute_freeze_amount(self):
+        pass
+
 class AskOrder(Order):
     @property
     def income_type(self):
@@ -97,6 +106,9 @@ class AskOrder(Order):
     @property
     def outcome_type(self):
         return self.coin_type
+
+    def compute_freeze_amount(self):
+        pass
 
 class Exchange(object):
     def __init__(self, coin_type, price_type, bids=None, asks=None):
@@ -136,6 +148,8 @@ class Exchange(object):
 
     @classmethod
     def compute_deals(cls, bid, ask):
+        assert type(bid) is BidOrder
+        assert type(ask) is AskOrder
         assert bid.price >= ask.price
         timestamp = int(time.time())
         # 卖出申报价格低于即时揭示的最高买入申报价格时，以即时揭示的最高买入申报价格为成交价。
@@ -157,8 +171,8 @@ class Exchange(object):
         # 卖单收入 = 买单支出 - 卖单手续费
         bid_income = ask_outcome
         ask_income = bid_outcome_origin - ask_fee
-        bid_deal = Deal(ask.id, deal_price, bid_income, bid_outcome, bid_fee, timestamp)
-        ask_deal = Deal(bid.id, deal_price, ask_income, ask_outcome, ask_fee, timestamp)
+        bid_deal = Deal(ask.id, deal_price, deal_amount, bid_income, bid_outcome, bid_fee, timestamp)
+        ask_deal = Deal(bid.id, deal_price, deal_amount, ask_income, ask_outcome, ask_fee, timestamp)
         return (bid_deal, ask_deal)
 
     def _find_rbtree(self, order):
