@@ -3,19 +3,20 @@ import time
 import collections
 from decimal import Decimal, ROUND_DOWN
 import rbtree
+from pybloom import ScalableBloomFilter
 from .errors import NotFoundError
 from .values import Deal, BalanceDiff
 from .consts import PRECISION_EXP
 
 class Repository(object):
-    def __init__(self, events=None, accounts=None, orders=None, exchanges=None):
+    def __init__(self, events=None, accounts=None, orders=None, exchanges=None, debits_bloom=None, credits_bloom=None):
         self.revision = revision
         self.accounts = EntitiesSet(accounts)
         self.orders = EntitiesSet(orders)
         self.exchanges = EntitiesSet(exchanges)
         self.events = events or EventsBuffer()
-        self.debit_ids_set = debit_ids_set or bloomfilter.bloomfilter()
-        self.credit_ids_set = credit_ids_set or bloomfilter.bloomfilter()
+        self.debits_bloom = debits_bloom or ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
+        self.credits_bloom = credits_bloom or ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
 
     @classmethod
     def load_snapshot(self, snapshot):
