@@ -94,6 +94,13 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(self.exchange.match(pop=True), (4, 6))
         self.assertEqual(self.exchange.match(pop=True), None)
 
+class TestAccount(unittest.TestCase):
+    def test_is_empty(self):
+        account = Account('account1', {'btc': Decimal('10'), 'ltc': Decimal('10') })
+        self.assertTrue(not account.is_empty())
+        account = Account('account2')
+        self.assertTrue(account.is_empty())
+
 class TestOrder(unittest.TestCase):
     def test_rest_freeze_amount(self):
         bid = BidOrder(1, 1, 'ltc', 'btc', price=3, amount=1, fee_rate=0.01, timestamp = 2)

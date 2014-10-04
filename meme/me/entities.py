@@ -9,12 +9,12 @@ from .values import Deal, BalanceDiff
 from .consts import PRECISION_EXP
 
 class Repository(object):
-    def __init__(self, events=None, accounts=None, orders=None, exchanges=None, debits_bloom=None, credits_bloom=None):
+    def __init__(self, revision=0, accounts=None, orders=None, exchanges=None, debits_bloom=None, credits_bloom=None):
         self.revision = revision
         self.accounts = EntitiesSet(accounts)
         self.orders = EntitiesSet(orders)
         self.exchanges = EntitiesSet(exchanges)
-        self.events = events or EventsBuffer()
+        # self.events = events or EventsBuffer()
         self.debits_bloom = debits_bloom or ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
         self.credits_bloom = credits_bloom or ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
 
@@ -26,7 +26,9 @@ class Repository(object):
         pass
 
     def commit(self, event):
-        pass
+        if event.revision != self.revision + 1:
+            raise ValueError("Invalid revision")
+        event.apply(self)
 
     def flush(self):
         pass
@@ -48,6 +50,9 @@ class EntitiesSet(object):
         if not entity:
             raise NotFoundError("%s#%d not found" % (self.name, id))
         return entity
+
+    def get(self, id, default=None):
+        return self.entities.get(id, default)
 
 class Account(object):
     def __init__(self, id, active_balances=None, frozen_balances=None):
@@ -74,6 +79,13 @@ class Account(object):
             raise ValueError("invalid BalanceDiff %s" % balance_diff)
         self.active_balances[coin_type] = balance_diff.new_active
         self.frozen_balances[coin_type] = balance_diff.new_frozen
+
+    def is_empty(self):
+        if any([1 for v in self.active_balances.values() if v > 0]):
+            return False
+        if any([1 for v in self.frozen_balances.values() if v > 0]):
+            return False
+        return True
 
 class Order(object):
     def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, deals=None, timestamp=None):

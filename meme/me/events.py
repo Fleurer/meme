@@ -1,3 +1,6 @@
+from .entities import Account
+from .utils import check_id
+
 class Event(object):
     def apply(self, repo):
         raise NotImplementedError
@@ -12,21 +15,52 @@ class Event(object):
     def build_by_json(cls, json):
         raise NotImplementedError
 
+class AccountCreated(Event):
+    def __init__(self, revision, account_id):
+        self.revision = revision
+        self.account_id = account_id
+
+    def apply(self, repo):
+        if repo.accounts.get(self.account_id):
+            return
+        account = Account(self.account_id)
+        repo.accounts.add(account)
+
+    @classmethod
+    def build(cls, repo, account_id):
+        return cls(repo.revision + 1, account_id)
+
+class AccountCanceled(Event):
+    def __init__(self, revision, account_id):
+        self.revision = revision
+        self.account_id = account_id
+
+    def apply(self, repo):
+        account = repo.accounts.get(self.account_id)
+        if account and not account.is_empty():
+            raise ValueError("Account #%s is not empty, can not cancel" % self.account_id)
+        repo.accounts.remove(self.account_id)
+
+    @classmethod
+    def build(cls, repo, account_id):
+        return cls(repo.revision + 1, account_id)
+
 class AccountCredited(Event):
-    def __init__(self, repo, revision, account_id, coin_type, balance_diff):
-        self.repo = repo
+    def __init__(self, revision, account_id, coin_type, balance_diff):
         self.revision = revision
         self.account_id = account_id
         self.coin_type = coin_type
-        self.balance_diffs = balance_diffs
+        self.balance_diff = balance_diff
 
-    def apply(self):
+    def apply(self, repo):
         account = self.repo.accounts.find(self.account_id)
-        account.active_balances[self.coin_type] = balance_diff.new_active
+        account.adjust(self.balance_diff)
 
     @classmethod
-    def build(self, repo, account_id, coin_type, amount):
-        pass
+    def build(cls, repo, account_id, coin_type, amount):
+        account = repo.accounts.find(account_id)
+        balance_diff = account.build_balance_diff(coin_type, active_diff=amount)
+        return cls(repo.revision + 1, account_id, coin_type, balance_diff)
 
 class AccountDebited(Event):
     def __init__(self, revision, account_id, coin_type, amount, balance_diffs):
