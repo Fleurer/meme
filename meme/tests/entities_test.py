@@ -94,6 +94,7 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(self.exchange.match(pop=True), (4, 6))
         self.assertEqual(self.exchange.match(pop=True), None)
 
+class TestOrder(unittest.TestCase):
     def test_rest_freeze_amount(self):
         bid = BidOrder(1, 1, 'ltc', 'btc', price=3, amount=1, fee_rate=0.01, timestamp = 2)
         self.assertEqual(float(bid.rest_freeze_amount), 3.03)
