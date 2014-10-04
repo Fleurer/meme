@@ -4,7 +4,7 @@ import collections
 from decimal import Decimal, ROUND_DOWN
 import rbtree
 from .errors import NotFoundError
-from .values import Deal
+from .values import Deal, BalanceDiff
 from .consts import PRECISION_EXP
 
 class Repository(object):
@@ -55,8 +55,8 @@ class Account(object):
         self.frozen_balances = frozen_balances or {}
 
     def build_balance_diff(self, coin_type, active_diff=0, frozen_diff=0):
-        old_active = account.active_balances.get(coin_type, Decimal('0'))
-        old_frozen = account.frozen_balances.get(coin_type, Decimal('0'))
+        old_active = self.active_balances.get(coin_type, Decimal('0'))
+        old_frozen = self.frozen_balances.get(coin_type, Decimal('0'))
         new_active = old_active + active_diff
         new_frozen = old_frozen + frozen_diff
         assert new_active >= 0
@@ -90,7 +90,7 @@ class Order(object):
     def append_deal(self, deal):
         self.deals.append(deal)
 
-    def build_balance_diff_on_create(self, account):
+    def build_balance_diff_for_create(self, account):
         freeze_amount = self.freeze_amount
         balance_diff = account.build_balance_diff(
                 self.outcome_type,
@@ -98,13 +98,13 @@ class Order(object):
                 frozen_diff = freeze_amount)
         return balance_diff
 
-    def build_balance_diffs_on_deal(self, account, deal):
+    def build_balance_diffs_for_deal(self, account, deal):
         return [
             account.build_balance_diff(self.income_type,  active_diff = deal.income_amount),
             account.build_balance_diff(self.outcome_type, frozen_diff = 0 - deal.outcome_amount),
         ]
 
-    def build_balance_diff_on_create(self, account):
+    def build_balance_diff_for_close(self, account):
         rest_freeze_amount = self.rest_freeze_amount
         balance_diff = account.build_balance_diff(
                 self.outcome_type,

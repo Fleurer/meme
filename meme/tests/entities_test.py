@@ -1,7 +1,7 @@
 import unittest
 from decimal import Decimal
 from collections import namedtuple, deque
-from meme.me.entities import EntitiesSet, AskOrder, BidOrder, Exchange
+from meme.me.entities import EntitiesSet, AskOrder, BidOrder, Exchange, Account
 from meme.me.errors import NotFoundError
 
 class TestEntitiesSet(unittest.TestCase):
@@ -129,8 +129,15 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(float(ask.rest_freeze_amount), 0.9)
         self.assertEqual(float(bid.rest_freeze_amount), 0.1001)
 
-    def test_compute_balance_diff_on_create(self):
-        pass
+    def test_compute_balance_diff_for_create(self):
+        account = Account('account1', {'btc': Decimal('10'), 'ltc': Decimal('10') })
+        bid = BidOrder('bid1', 'account1', 'ltc', 'btc', price=0.3, amount=1, fee_rate=0.001, timestamp = 2)
+        balance_diff = bid.build_balance_diff_for_create(account)
+        self.assertEqual(float(balance_diff.old_active), 10)
+        self.assertEqual(float(balance_diff.new_active), 9.6997)
+        self.assertEqual(float(balance_diff.new_frozen), 0.3003)
+        self.assertEqual(balance_diff.active_diff, 0-bid.freeze_amount)
+        self.assertEqual(balance_diff.frozen_diff, bid.freeze_amount)
 
 if __name__ == '__main__':
     unittest.main()
