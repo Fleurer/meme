@@ -114,6 +114,10 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(float(bid_deal.income), 0.1)
         self.assertEqual(float(bid_deal.outcome), 0.03003)
         self.assertEqual(float(bid_deal.fee), 0.00003)
+        bid.append_deal(bid_deal)
+        ask.append_deal(ask_deal)
+        self.assertEqual(float(ask.rest_amount), 0.9)
+        self.assertEqual(float(bid.rest_amount), 0.0)
 
 
 if __name__ == '__main__':
