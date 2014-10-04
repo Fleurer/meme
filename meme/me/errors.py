@@ -3,3 +3,6 @@ class MemeError(StandardError):
 
 class NotFoundError(MemeError):
     pass
+
+class InvalidAccountCancel(MemeError):
+    pass

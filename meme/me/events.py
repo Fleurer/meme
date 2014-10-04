@@ -1,5 +1,6 @@
 from .entities import Account
 from .utils import check_id
+from .errors import InvalidAccountCancel
 
 class Event(object):
     def apply(self, repo):
@@ -38,7 +39,7 @@ class AccountCanceled(Event):
     def apply(self, repo):
         account = repo.accounts.get(self.account_id)
         if account and not account.is_empty():
-            raise ValueError("Account #%s is not empty, can not cancel" % self.account_id)
+            raise InvalidAccountCancel("Account #%s is not empty, can not cancel" % self.account_id)
         repo.accounts.remove(self.account_id)
 
     @classmethod
@@ -53,7 +54,7 @@ class AccountCredited(Event):
         self.balance_diff = balance_diff
 
     def apply(self, repo):
-        account = self.repo.accounts.find(self.account_id)
+        account = repo.accounts.find(self.account_id)
         account.adjust(self.balance_diff)
 
     @classmethod
