@@ -1,4 +1,4 @@
-import time
+from collections import namedtuple
 
 class BalanceDiff(object):
     def __init__(self, account_id, coin_type, old_active, old_frozen, new_active, new_frozen):
@@ -20,18 +20,4 @@ class BalanceDiff(object):
         assert self.new_active >= 0
         return cls(account_id, coin_type, old_active, old_frozen, new_active, new_frozen)
 
-class Deal(object):
-    def __init__(self, bid_order_id, ask_order_id, price, amount, timestamp=None):
-        self.bid_order_id = bid_order_id
-        self.ask_order_id = ask_order_id
-        self.price = price
-        self.amount = amount
-        self.timestamp = timestamp or int(time.time())
-
-    @classmethod
-    def build(cls, repo, bid_order_id, ask_order_id, price, amount):
-        bid_order = repo.orders.find(bid_order_id)
-        ask_order = repo.orders.find(ask_order_id)
-        assert bid_order.rest_amount >= amount
-        assert ask_order.rest_amount >= amount
-        return cls(bid_order_id, ask_order_id, price, amount)
+Deal = namedtuple('Deal', ['pair_id', 'price', 'income', 'outcome', 'fee', 'timestamp'])

@@ -1,7 +1,10 @@
 # coding: utf-8
 import rbtree
 import collections
+from decimal import Decimal, ROUND_DOWN
 from .errors import NotFoundError
+from .values import Deal
+from .consts import PRECISION_EXP
 
 class Repository(object):
     def __init__(self, events=None, accounts=None, orders=None, exchanges=None):
@@ -51,19 +54,31 @@ class Account(object):
         self.frozen_balances = frozen_balances or {}
 
 class Order(object):
-    def __init__(self, id, account_id, coin_type, price_type, price, amount, rest_amount=None, fee_rate=0.001):
+    def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, deals=None):
         self.id = id
         self.account_id = account_id
         self.coin_type = coin_type
         self.price_type = price_type
-        self.price = price
-        self.amount = amount
-        self.rest_amount = rest_amount or amount
-        self.fee_rate = fee_rate
+        self.price = Decimal(price)
+        self.amount = Decimal(amount)
+        self.fee_rate = Decimal(fee_rate)
+        self.deals = deals or []
 
     @property
     def exchange_id(self):
         return "%s-%s" % (self.coin_type, self.price_type)
+
+    def append_deal(self, deal):
+        pass
+
+    def compute_balance_diff_on_create(self):
+        pass
+
+    def compute_balance_diff_on_deal(self, deal):
+        pass
+
+    def compute_balance_diff_on_close(self):
+        pass
 
 class BidOrder(Order):
     @property
@@ -118,6 +133,33 @@ class Exchange(object):
                 self._discard(self.asks, ask_price, ask_id)
             return (bid_id, ask_id)
         return None
+
+    @classmethod
+    def compute_deals(cls, bid, ask):
+        assert bid.price >= ask.price
+        timestamp = int(time.time())
+        # 卖出申报价格低于即时揭示的最高买入申报价格时，以即时揭示的最高买入申报价格为成交价。
+        # 买入申报价格高于即时揭示的最低卖出申报价格时，以即时揭示的最低卖出申报价格为成交价。
+        if bid.timestamp > ask.timestamp:
+            deal_price = ask.price
+        else:
+            deal_price = bid.price
+        # 这里需要 round(:down)，不然会导致成交额大于委托额
+        deal_amount = min(bid.rest_amount, ask.rest_amount).quantize(PRECISION_EXP, ROUND_DOWN)
+        ask_outcome = deal_amount
+        bid_outcome_origin = (ask_outcome * deal_price).quantize(PRECISION_EXP, ROUND_DOWN)
+        # 买单手续费 = 买单支出部分 * 买单手续费率，加在买单支出上
+        # 卖单手续费 = 卖单收入部分 * 卖单手续费率，扣在卖单收入里
+        bid_fee = (bid_outcome_origin * bid.fee_rate).quantize(PRECISION_EXP, ROUND_DOWN)
+        ask_fee = (bid_outcome_origin * ask.fee_rate).quantize(PRECISION_EXP, ROUND_DOWN)
+        bid_outcome = bid_outcome_origin + bid_fee
+        # 买单收入 = 卖单支出
+        # 卖单收入 = 买单支出 - 卖单手续费
+        bid_income = ask_outcome
+        ask_income = bid_outcome_origin - ask_fee
+        bid_deal = Deal(ask.id, deal_price, bid_income, bid_outcome, bid_fee, timestamp)
+        ask_deal = Deal(bid.id, deal_price, ask_income, ask_outcome, ask_fee, timestamp)
+        return (bid_deal, ask_deal)
 
     def _find_rbtree(self, order):
         if order.exchange_id != self.id:
