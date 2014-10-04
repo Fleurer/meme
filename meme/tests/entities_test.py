@@ -107,6 +107,7 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(float(ask_deal.outcome), 1)
         self.assertEqual(float(ask_deal.fee), 0.0002)
         bid.append_deal(bid_deal)
+        ask.append_deal(ask_deal)
         self.assertEqual(float(bid.rest_amount), 0.1)
         ask = AskOrder(3, 1, 'ltc', 'btc', price=0.2, amount=1, timestamp = 3)
         bid_deal, ask_deal = Exchange.compute_deals(bid, ask)
@@ -118,7 +119,6 @@ class TestExchange(unittest.TestCase):
         ask.append_deal(ask_deal)
         self.assertEqual(float(ask.rest_amount), 0.9)
         self.assertEqual(float(bid.rest_amount), 0.0)
-
 
 if __name__ == '__main__':
     unittest.main()

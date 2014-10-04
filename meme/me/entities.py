@@ -95,8 +95,10 @@ class BidOrder(Order):
     def outcome_type(self):
         return self.price_type
 
-    def compute_freeze_amount(self):
-        pass
+    @property
+    def rest_freeze_amount(self):
+        net_total = ((self.amount * self.price) * (1 + self.fee_rate)).quantize(PRECISION_EXP)
+        return net_total - sum([d.outcome for d in self.deals])
 
 class AskOrder(Order):
     @property
@@ -107,8 +109,9 @@ class AskOrder(Order):
     def outcome_type(self):
         return self.coin_type
 
-    def compute_freeze_amount(self):
-        pass
+    @property
+    def rest_freeze_amount(self):
+        return self.amount - sum([d.outcome for d in self.deals])
 
 class Exchange(object):
     def __init__(self, coin_type, price_type, bids=None, asks=None):
