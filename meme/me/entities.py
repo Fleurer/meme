@@ -69,6 +69,8 @@ class Account(object):
             raise ValueError("BalanceDiff old_active mismatch")
         if self.frozen_balances.get(coin_type, 0) != balance_diff.old_frozen:
             raise ValueError("BalanceDiff old_frozen mismatch")
+        if balance_diff.new_active < 0 or balance_diff.new_frozen < 0:
+            raise ValueError("invalid BalanceDiff %s" % balance_diff)
         self.active_balances[coin_type] = balance_diff.new_active
         self.frozen_balances[coin_type] = balance_diff.new_frozen
 
