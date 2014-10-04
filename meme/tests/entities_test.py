@@ -126,6 +126,8 @@ class TestExchange(unittest.TestCase):
         ask.append_deal(ask_deal)
         self.assertEqual(float(ask.rest_amount), 0.9)
         self.assertEqual(float(bid.rest_amount), 0.0)
+        self.assertEqual(float(ask.rest_freeze_amount), 0.9)
+        self.assertEqual(float(bid.rest_freeze_amount), 0.1001)
 
 if __name__ == '__main__':
     unittest.main()
