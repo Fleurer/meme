@@ -1,2 +1,3 @@
-rbtree
-flask
+rbtree==0.9.0
+Flask==0.10.1
+pybloomfiltermmap==0.3.14
