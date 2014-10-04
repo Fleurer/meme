@@ -54,6 +54,15 @@ class Account(object):
         self.active_balances = active_balances or {}
         self.frozen_balances = frozen_balances or {}
 
+    def build_balance_diff(self, coin_type, active_diff=0, frozen_diff=0):
+        old_active = account.active_balances.get(coin_type, Decimal('0'))
+        old_frozen = account.frozen_balances.get(coin_type, Decimal('0'))
+        new_active = old_active + active_diff
+        new_frozen = old_frozen + frozen_diff
+        assert new_active >= 0
+        assert new_frozen >= 0
+        return BalanceDiff(self.id, coin_type, old_active, old_frozen, new_active, new_frozen)
+
 class Order(object):
     def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, deals=None, timestamp=None):
         self.id = id
@@ -74,17 +83,34 @@ class Order(object):
     def rest_amount(self):
         return self.amount - sum([d.amount for d in self.deals])
 
+    @property
+    def rest_freeze_amount(self):
+        return self.freeze_amount - sum([d.outcome for d in self.deals])
+
     def append_deal(self, deal):
         self.deals.append(deal)
 
-    def compute_balance_diff_on_create(self):
-        pass
+    def build_balance_diff_on_create(self, account):
+        freeze_amount = self.freeze_amount
+        balance_diff = account.build_balance_diff(
+                self.outcome_type,
+                active_diff = 0 - freeze_amount,
+                frozen_diff = freeze_amount)
+        return balance_diff
 
-    def compute_balance_diff_on_deal(self, deal):
-        pass
+    def build_balance_diffs_on_deal(self, account, deal):
+        return [
+            account.build_balance_diff(self.income_type,  active_diff = deal.income_amount),
+            account.build_balance_diff(self.outcome_type, frozen_diff = 0 - deal.outcome_amount),
+        ]
 
-    def compute_balance_diff_on_close(self):
-        pass
+    def build_balance_diff_on_create(self, account):
+        rest_freeze_amount = self.rest_freeze_amount
+        balance_diff = account.build_balance_diff(
+                self.outcome_type,
+                active_diff = rest_freeze_amount,
+                frozen_diff = 0 - rest_freeze_amount)
+        return balance_diff
 
 class BidOrder(Order):
     @property
@@ -96,9 +122,9 @@ class BidOrder(Order):
         return self.price_type
 
     @property
-    def rest_freeze_amount(self):
+    def freeze_amount(self):
         net_total = ((self.amount * self.price) * (1 + self.fee_rate)).quantize(PRECISION_EXP)
-        return net_total - sum([d.outcome for d in self.deals])
+        return net_total
 
 class AskOrder(Order):
     @property
@@ -110,8 +136,8 @@ class AskOrder(Order):
         return self.coin_type
 
     @property
-    def rest_freeze_amount(self):
-        return self.amount - sum([d.outcome for d in self.deals])
+    def freeze_amount(self):
+        return self.amount
 
 class Exchange(object):
     def __init__(self, coin_type, price_type, bids=None, asks=None):

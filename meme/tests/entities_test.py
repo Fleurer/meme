@@ -129,5 +129,8 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(float(ask.rest_freeze_amount), 0.9)
         self.assertEqual(float(bid.rest_freeze_amount), 0.1001)
 
+    def test_compute_balance_diff_on_create(self):
+        pass
+
 if __name__ == '__main__':
     unittest.main()
