@@ -94,9 +94,15 @@ class TestExchange(unittest.TestCase):
         self.assertEqual(self.exchange.match(pop=True), (4, 6))
         self.assertEqual(self.exchange.match(pop=True), None)
 
+    def test_rest_freeze_amount(self):
+        bid = BidOrder(1, 1, 'ltc', 'btc', price=3, amount=1, fee_rate=0.01, timestamp = 2)
+        self.assertEqual(float(bid.rest_freeze_amount), 3.03)
+        ask = AskOrder(1, 1, 'ltc', 'btc', price=3, amount=1, fee_rate=0.01, timestamp = 2)
+        self.assertEqual(float(ask.rest_freeze_amount), 1)
+
     def test_compute_deals1(self):
-        bid = BidOrder(1, 1, 'ltc', 'btc', price=0.3, amount=1.1, timestamp = 2)
-        ask = AskOrder(2, 1, 'ltc', 'btc', price=0.2, amount=1, timestamp = 1)
+        bid = BidOrder(1, 1, 'ltc', 'btc', price=0.3, amount=1.1, fee_rate=0.001, timestamp = 2)
+        ask = AskOrder(2, 1, 'ltc', 'btc', price=0.2, amount=1, fee_rate=0.001, timestamp = 1)
         bid_deal, ask_deal = Exchange.compute_deals(bid, ask)
         self.assertEqual(float(bid_deal.price), 0.2)
         self.assertEqual(float(bid_deal.income), 1)
@@ -109,7 +115,8 @@ class TestExchange(unittest.TestCase):
         bid.append_deal(bid_deal)
         ask.append_deal(ask_deal)
         self.assertEqual(float(bid.rest_amount), 0.1)
-        ask = AskOrder(3, 1, 'ltc', 'btc', price=0.2, amount=1, timestamp = 3)
+        self.assertEqual(float(bid.rest_freeze_amount), 0.13013)
+        ask = AskOrder(3, 1, 'ltc', 'btc', price=0.2, amount=1, fee_rate=0.001, timestamp = 3)
         bid_deal, ask_deal = Exchange.compute_deals(bid, ask)
         self.assertEqual(float(bid_deal.price), 0.3)
         self.assertEqual(float(bid_deal.income), 0.1)
