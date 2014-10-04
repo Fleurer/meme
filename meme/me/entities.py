@@ -63,6 +63,15 @@ class Account(object):
         assert new_frozen >= 0
         return BalanceDiff(self.id, coin_type, old_active, old_frozen, new_active, new_frozen)
 
+    def adjust(self, balance_diff):
+        coin_type = balance_diff.coin_type
+        if self.active_balances.get(coin_type, 0) != balance_diff.old_active:
+            raise ValueError("BalanceDiff old_active mismatch")
+        if self.frozen_balances.get(coin_type, 0) != balance_diff.old_frozen:
+            raise ValueError("BalanceDiff old_frozen mismatch")
+        self.active_balances[coin_type] = balance_diff.new_active
+        self.frozen_balances[coin_type] = balance_diff.new_frozen
+
 class Order(object):
     def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, deals=None, timestamp=None):
         self.id = id
