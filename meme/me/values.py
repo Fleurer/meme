@@ -8,6 +8,8 @@ Deal = namedtuple('Deal', [
     'pair_id',
     'price',
     'amount',
+    'rest_amount',
+    'rest_freeze_amount',
     'income',
     'outcome',
     'fee',

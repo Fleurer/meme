@@ -135,12 +135,14 @@ class Order(Entity):
         income_diff = account.build_balance_diff(
                 self.income_type, 
                 active_diff = deal.income_amount)
+        unfreeze_amount = deal.rest_freeze_amount if deal.rest_amount == 0 else 0
         outcome_diff = account.build_balance_diff(
                 self.outcome_type,
-                frozen_diff = 0 - deal.outcome_amount)
+                active_diff = unfreeze_amount,
+                frozen_diff = 0 - deal.outcome_amount - unfreeze_amount)
         return (income_diff, outcome_diff)
 
-    def build_balance_diff_for_close(self, account, old_active=None, old_frozen=None):
+    def build_balance_diff_for_close(self, account):
         rest_freeze_amount = self.rest_freeze_amount
         balance_diff = account.build_balance_diff(
                 self.outcome_type,
@@ -238,8 +240,13 @@ class Exchange(Entity):
         # 卖单收入 = 买单支出 - 卖单手续费
         bid_income = ask_outcome
         ask_income = bid_outcome_origin - ask_fee
-        bid_deal = Deal(bid.id, ask.id, deal_price, deal_amount, bid_income, bid_outcome, bid_fee, timestamp)
-        ask_deal = Deal(ask.id, bid.id, deal_price, deal_amount, ask_income, ask_outcome, ask_fee, timestamp)
+        # 记录订单未结清的额度
+        bid_rest_amount = bid.rest_amount - deal_amount
+        ask_rest_amount = ask.rest_amount - deal_amount
+        bid_rest_freeze_amount = bid.rest_freeze_amount - bid_outcome
+        ask_rest_freeze_amount = ask.rest_freeze_amount - ask_outcome
+        bid_deal = Deal(bid.id, ask.id, deal_price, deal_amount, bid_rest_amount, bid_rest_freeze_amount, bid_income, bid_outcome, bid_fee, timestamp)
+        ask_deal = Deal(ask.id, bid.id, deal_price, deal_amount, ask_rest_amount, ask_rest_freeze_amount, ask_income, ask_outcome, ask_fee, timestamp)
         return (bid_deal, ask_deal)
 
     def _find_rbtree(self, order):
