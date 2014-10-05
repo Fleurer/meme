@@ -9,7 +9,7 @@ from .values import Deal, BalanceDiff
 from .consts import PRECISION_EXP
 
 class Repository(object):
-    def __init__(self, revision=0, accounts=None, orders=None, exchanges=None, debits_bloom=None, credits_bloom=None):
+    def __init__(self, revision=0, accounts=None, orders=None, exchanges=None, debits_bloom=None, credits_bloom=None, orders_bloom=None):
         self.revision = revision
         self.accounts = EntitiesSet(accounts)
         self.orders = EntitiesSet(orders)
@@ -17,6 +17,7 @@ class Repository(object):
         # self.events = events or EventsBuffer()
         self.debits_bloom = debits_bloom or ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
         self.credits_bloom = credits_bloom or ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
+        self.orders_bloom = orders_bloom or ScalableBloomFilter(mode=ScalableBloomFilter.SMALL_SET_GROWTH)
 
     @classmethod
     def load_snapshot(self, snapshot):

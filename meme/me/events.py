@@ -1,5 +1,6 @@
 # coding: utf-8
-from .entities import Account
+from copy import deepcopy
+from .entities import Account, Exchange
 from .utils import validate_id
 from .errors import CancelError, ConflictedError
 
@@ -94,31 +95,65 @@ class AccountDebited(Event):
         account.adjust(self.balance_diff)
         repo.debits_bloom.add(self.id)
 
-class BidOrderCreated(Event):
-    def __init__(self, revision, id, account_id, coin_type, price_type, price, amount, fee_rate, balance_diff):
+class ExchangeCreated(Event):
+    def __init__(self, revision, coin_type, price_type):
+        self.id = id
         self.revision = revision
-        self.account_id = account_id
         self.coin_type = coin_type
         self.price_type = price_type
-        self.price = price
-        self.amount = amount
-        self.fee_rate = fee_rate
+
+    @classmethod
+    def build(cls, repo, coin_type, price_type):
+        return cls(repo.revision + 1, coin_type, price_type)
+
+    def apply(self, repo):
+        exchange = Exchange(self.coin_type, self.price_type)
+        if not repo.exchanges.get(exchange.id):
+            repo.exchanges.add(exchange)
+
+class OrderCreated(Event):
+    def __init__(self, revision, order, balance_diff):
+        self.revision = revision
+        self.order = deepcopy(order)
         self.balance_diff = balance_diff
 
     @classmethod
-    def build(cls, repo, id, account_id, coin_type, price_type, price, amount, fee_rate):
-        pass
+    def build(cls, repo, id, klass, account_id, coin_type, price_type, price, amount, fee_rate):
+        account = repo.accounts.find(account_id)
+        order = klass(id, account_id, coin_type, price_type, price, amount, fee_rate)
+        balance_diff = order.build_balance_diff_for_create(account)
+        return cls(repo.revision + 1, order, balance_diff)
 
-    def apply(self):
-        pass
-
-class AskOrderCreated(Event):
-    def __init__(self, revision, id, account_id, exchange_id, price, amount, balance_diffs):
-        self.revision = revision
+    def apply(self, repo):
+        account = repo.accounts.find(self.order.account_id)
+        exchange = repo.exchanges.find(self.order.exchange_id)
+        if repo.orders.get(self.order.id):
+            raise ConflictedError("Order %s already created" % self.order.id)
+        order = deepcopy(self.order)
+        account.adjust(self.balance_diff)
+        repo.orders.add(order)
+        exchange.enqueue(order)
 
 class OrderCanceled(Event):
-    def __init__(self, revision, order_id, balance_diffs):
-        pass
+    def __init__(self, revision, order_id, balance_diff):
+        self.revision = revision
+        self.order_id = order_id
+        self.balance_diff = balance_diff
+
+    @classmethod
+    def build(cls, repo, order_id):
+        order = repo.orders.find(order_id)
+        account = repo.accounts.find(order.account_id)
+        balance_diff = order.build_balance_diff_for_close(account)
+        return cls(repo.revision + 1, order_id, balance_diff)
+
+    def apply(self, repo):
+        order = repo.orders.find(self.order_id)
+        exchange = repo.exchanges.find(order.exchange_id)
+        account = repo.accounts.find(order.account_id)
+        account.adjust(self.balance_diff)
+        repo.orders.remove(order.id)
+        exchange.dequeue(order)
 
 class OrderDealed(Event):
     def __init__(self, revision, deal, balance_diffs):
