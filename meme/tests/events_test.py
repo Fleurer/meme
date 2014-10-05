@@ -71,6 +71,7 @@ class TestOrderEvents(unittest.TestCase):
             self.repo.commit(OrderCreated.build(self.repo, 'bid1', BidOrder, 'account1', 'ltc', 'btc', 1, 50, 0.01))
         self.assertEqual(repo_bak.orders, self.repo.orders)
         self.assertEqual(repo_bak.accounts, self.repo.accounts)
+        self.assertEqual(repo_bak.exchanges, self.repo.exchanges)
 
 if __name__ == '__main__':
     unittest.main()

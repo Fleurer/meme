@@ -58,14 +58,15 @@ class EntitiesSet(object):
     def get(self, id, default=None):
         return self.entities.get(id, default)
 
-class Account(object):
+class Entity(object):
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+class Account(Entity):
     def __init__(self, id, active_balances=None, frozen_balances=None):
         self.id = id
         self.active_balances = active_balances or {}
         self.frozen_balances = frozen_balances or {}
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
 
     def build_balance_diff(self, coin_type, active_diff=0, frozen_diff=0):
         old_active = self.active_balances.get(coin_type, Decimal('0'))
@@ -94,7 +95,7 @@ class Account(object):
             return False
         return True
 
-class Order(object):
+class Order(Entity):
     def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, deals=None, timestamp=None):
         self.id = id
         self.account_id = account_id
@@ -105,9 +106,6 @@ class Order(object):
         self.fee_rate = Decimal(fee_rate)
         self.deals = deals or []
         self.timestamp = timestamp or int(time.time())
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
 
     @property
     def exchange_id(self):
@@ -176,7 +174,7 @@ class AskOrder(Order):
     def freeze_amount(self):
         return self.amount
 
-class Exchange(object):
+class Exchange(Entity):
     def __init__(self, coin_type, price_type, bids=None, asks=None):
         self.coin_type = coin_type
         self.price_type = price_type
