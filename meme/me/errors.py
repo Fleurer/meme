@@ -9,3 +9,6 @@ class CancelError(MemeError):
 
 class BalanceError(MemeError):
     pass
+
+class InvalidId(MemeError):
+    pass

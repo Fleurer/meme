@@ -61,6 +61,10 @@ class AccountCredited(Event):
         return cls(repo.revision + 1, id, account_id, coin_type, balance_diff)
 
     def apply(self, repo):
+        if not check_id(self.id):
+            raise InvalidId("Invalid credit id format %s" % self.id)
+        if self.id in repo.credits_bloom:
+            raise InvalidId("Credit id %s is already occupied" % self.id)
         account = repo.accounts.find(self.account_id)
         account.adjust(self.balance_diff)
         repo.credits_bloom.add(self.id)
@@ -80,6 +84,10 @@ class AccountDebited(Event):
         return cls(repo.revision + 1, id, account_id, coin_type, balance_diff)
 
     def apply(self, repo):
+        if not check_id(self.id):
+            raise InvalidId("Invalid debit id format %s" % self.id)
+        if self.id in repo.debits_bloom:
+            raise InvalidId("Debit id %s is already occupied" % self.id)
         account = repo.accounts.find(self.account_id)
         account.adjust(self.balance_diff)
         repo.debits_bloom.add(self.id)
