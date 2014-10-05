@@ -80,11 +80,11 @@ class Account(Entity):
     def adjust(self, balance_diff):
         coin_type = balance_diff.coin_type
         if self.active_balances.get(coin_type, 0) != balance_diff.old_active:
-            raise ValueError("BalanceDiff old_active mismatch")
+            raise BalanceError("BalanceDiff old_active mismatch")
         if self.frozen_balances.get(coin_type, 0) != balance_diff.old_frozen:
-            raise ValueError("BalanceDiff old_frozen mismatch")
+            raise BalanceError("BalanceDiff old_frozen mismatch")
         if balance_diff.new_active < 0 or balance_diff.new_frozen < 0:
-            raise ValueError("invalid BalanceDiff %s" % balance_diff)
+            raise BalanceError("invalid BalanceDiff %s" % balance_diff)
         self.active_balances[coin_type] = balance_diff.new_active
         self.frozen_balances[coin_type] = balance_diff.new_frozen
 
