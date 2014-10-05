@@ -1,4 +1,5 @@
 import unittest
+from copy import deepcopy
 from decimal import Decimal
 from collections import namedtuple, deque
 from meme.me.entities import Repository, EntitiesSet, AskOrder, BidOrder, Exchange, Account
@@ -63,6 +64,13 @@ class TestOrderEvents(unittest.TestCase):
         self.assertEqual(float(self.repo.accounts.find('account1').active_balances['btc']), 100)
         self.assertEqual(float(self.repo.accounts.find('account1').frozen_balances['btc']), 0)
 
+    def test_create_a_bigger_order_than_balance(self):
+        self.repo.commit(OrderCreated.build(self.repo, 'bid1', BidOrder, 'account1', 'ltc', 'btc', 1, 50, 0.01))
+        repo_bak = deepcopy(self.repo)
+        with self.assertRaises(BalanceError):
+            self.repo.commit(OrderCreated.build(self.repo, 'bid1', BidOrder, 'account1', 'ltc', 'btc', 1, 50, 0.01))
+        self.assertEqual(repo_bak.orders, self.repo.orders)
+        self.assertEqual(repo_bak.accounts, self.repo.accounts)
 
 if __name__ == '__main__':
     unittest.main()

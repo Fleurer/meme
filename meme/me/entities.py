@@ -39,6 +39,9 @@ class EntitiesSet(object):
         self.entities = entities or {}
         self.name = name
 
+    def __eq__(self, other):
+        return self.entities.__eq__(other.entities)
+
     def add(self, entity):
         assert hasattr(entity, 'id')
         self.entities[entity.id] = entity
@@ -60,6 +63,9 @@ class Account(object):
         self.id = id
         self.active_balances = active_balances or {}
         self.frozen_balances = frozen_balances or {}
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
     def build_balance_diff(self, coin_type, active_diff=0, frozen_diff=0):
         old_active = self.active_balances.get(coin_type, Decimal('0'))
@@ -99,6 +105,9 @@ class Order(object):
         self.fee_rate = Decimal(fee_rate)
         self.deals = deals or []
         self.timestamp = timestamp or int(time.time())
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
     @property
     def exchange_id(self):
