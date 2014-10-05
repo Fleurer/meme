@@ -47,38 +47,42 @@ class AccountCanceled(Event):
         repo.accounts.remove(self.account_id)
 
 class AccountCredited(Event):
-    def __init__(self, revision, account_id, coin_type, balance_diff):
+    def __init__(self, revision, id, account_id, coin_type, balance_diff):
+        self.id = id
         self.revision = revision
         self.account_id = account_id
         self.coin_type = coin_type
         self.balance_diff = balance_diff
 
     @classmethod
-    def build(cls, repo, account_id, coin_type, amount):
+    def build(cls, repo, id, account_id, coin_type, amount):
         account = repo.accounts.find(account_id)
         balance_diff = account.build_balance_diff(coin_type, active_diff=amount)
-        return cls(repo.revision + 1, account_id, coin_type, balance_diff)
+        return cls(repo.revision + 1, id, account_id, coin_type, balance_diff)
 
     def apply(self, repo):
         account = repo.accounts.find(self.account_id)
         account.adjust(self.balance_diff)
+        repo.credits_bloom.add(self.id)
 
 class AccountDebited(Event):
-    def __init__(self, revision, account_id, coin_type, balance_diff):
+    def __init__(self, revision, id, account_id, coin_type, balance_diff):
+        self.id = id
         self.revision = revision
         self.account_id = account_id
         self.coin_type = coin_type
         self.balance_diff = balance_diff
 
     @classmethod
-    def build(cls, repo, account_id, coin_type, amount):
+    def build(cls, repo, id, account_id, coin_type, amount):
         account = repo.accounts.find(account_id)
         balance_diff = account.build_balance_diff(coin_type, active_diff=0-amount)
-        return cls(repo.revision + 1, account_id, coin_type, balance_diff)
+        return cls(repo.revision + 1, id, account_id, coin_type, balance_diff)
 
     def apply(self, repo):
         account = repo.accounts.find(self.account_id)
         account.adjust(self.balance_diff)
+        repo.debits_bloom.add(self.id)
 
 class BidOrderCreated(Event):
     def __init__(self, revision, id, account_id, exchange_id, price, amount, balance_diffs):
@@ -88,7 +92,7 @@ class BidOrderCreated(Event):
 
 class AskOrderCreated(Event):
     def __init__(self, revision, id, account_id, exchange_id, price, amount, balance_diffs):
-        pass
+        self.revision = revision
 
 class OrderCanceled(Event):
     def __init__(self, revision, order_id, balance_diffs):
