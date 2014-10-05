@@ -156,15 +156,25 @@ class OrderCanceled(Event):
         exchange.dequeue(order)
 
 class OrderDealed(Event):
-    def __init__(self, revision, bid_deal, ask_deal, balance_diffs):
+    def __init__(self, revision, bid_deal, ask_deal, bid_balance_diffs, ask_balance_diffs):
         self.revision = revision
         self.bid_deal = bid_deal
         self.ask_deal = ask_deal
+        self.bid_balance_diffs = bid_balance_diffs
+        self.ask_balance_diffs = ask_balance_diffs
 
-    def build(self, repo, bid_deal, ask_deal):
+    @classmethod
+    def build(cls, repo, bid_deal, ask_deal):
         bid_order = repo.orders.find(bid_order.order_id)
         ask_order = repo.orders.find(ask_order.order_id)
-        bid_order.build_balance_diffs_for_deal()
+        bid_account = repo.accounts.find(bid_order.account_id)
+        ask_account = repo.accounts.find(ask_order.account_id)
+        bid_income_diff, bid_outcome_diff = bid_order.build_balance_diffs_for_deal(bid_account, bid_deal)
+        ask_income_diff, ask_outcome_diff = ask_order.build_balance_diffs_for_deal(ask_account, ask_deal)
+        if bid_account.id == ask_account.id:
+            ask_income_diff = bid_outcome_diff.build_next(ask_income_diff.active_diff, ask_income_diff.frozen_diff)
+            ask_outcome_diff = bid_income_diff.build_next(ask_outcome_diff.active_diff, ask_outcome_diff.frozen_diff)
+        return cls(repo.revision + 1, bid_deal, ask_deal, (bid_income_diff, bid_outcome_diff), (ask_income_diff, ask_outcome_diff))
 
     def apply(self):
         pass

@@ -132,13 +132,13 @@ class Order(Entity):
         return balance_diff
 
     def build_balance_diffs_for_deal(self, account, deal):
-        diff1 = account.build_balance_diff(
+        income_diff = account.build_balance_diff(
                 self.income_type, 
                 active_diff = deal.income_amount)
-        diff2 = account.build_balance_diff(
+        outcome_diff = account.build_balance_diff(
                 self.outcome_type,
                 frozen_diff = 0 - deal.outcome_amount)
-        return (diff1, diff2)
+        return (income_diff, outcome_diff)
 
     def build_balance_diff_for_close(self, account, old_active=None, old_frozen=None):
         rest_freeze_amount = self.rest_freeze_amount
