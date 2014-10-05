@@ -21,30 +21,30 @@ class AccountCreated(Event):
         self.revision = revision
         self.account_id = account_id
 
+    @classmethod
+    def build(cls, repo, account_id):
+        return cls(repo.revision + 1, account_id)
+
     def apply(self, repo):
         if repo.accounts.get(self.account_id):
             return
         account = Account(self.account_id)
         repo.accounts.add(account)
 
-    @classmethod
-    def build(cls, repo, account_id):
-        return cls(repo.revision + 1, account_id)
-
 class AccountCanceled(Event):
     def __init__(self, revision, account_id):
         self.revision = revision
         self.account_id = account_id
+
+    @classmethod
+    def build(cls, repo, account_id):
+        return cls(repo.revision + 1, account_id)
 
     def apply(self, repo):
         account = repo.accounts.get(self.account_id)
         if account and not account.is_empty():
             raise InvalidAccountCancel("Account #%s is not empty, can not cancel" % self.account_id)
         repo.accounts.remove(self.account_id)
-
-    @classmethod
-    def build(cls, repo, account_id):
-        return cls(repo.revision + 1, account_id)
 
 class AccountCredited(Event):
     def __init__(self, revision, account_id, coin_type, balance_diff):
@@ -53,15 +53,15 @@ class AccountCredited(Event):
         self.coin_type = coin_type
         self.balance_diff = balance_diff
 
-    def apply(self, repo):
-        account = repo.accounts.find(self.account_id)
-        account.adjust(self.balance_diff)
-
     @classmethod
     def build(cls, repo, account_id, coin_type, amount):
         account = repo.accounts.find(account_id)
         balance_diff = account.build_balance_diff(coin_type, active_diff=amount)
         return cls(repo.revision + 1, account_id, coin_type, balance_diff)
+
+    def apply(self, repo):
+        account = repo.accounts.find(self.account_id)
+        account.adjust(self.balance_diff)
 
 class AccountDebited(Event):
     def __init__(self, revision, account_id, coin_type, balance_diff):
@@ -70,15 +70,15 @@ class AccountDebited(Event):
         self.coin_type = coin_type
         self.balance_diff = balance_diff
 
-    def apply(self, repo):
-        account = repo.accounts.find(self.account_id)
-        account.adjust(self.balance_diff)
-
     @classmethod
     def build(cls, repo, account_id, coin_type, amount):
         account = repo.accounts.find(account_id)
         balance_diff = account.build_balance_diff(coin_type, active_diff=0-amount)
         return cls(repo.revision + 1, account_id, coin_type, balance_diff)
+
+    def apply(self, repo):
+        account = repo.accounts.find(self.account_id)
+        account.adjust(self.balance_diff)
 
 class BidOrderCreated(Event):
     def __init__(self, revision, id, account_id, exchange_id, price, amount, balance_diffs):
