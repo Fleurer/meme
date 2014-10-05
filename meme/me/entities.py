@@ -68,9 +68,9 @@ class Account(Entity):
         self.active_balances = active_balances or {}
         self.frozen_balances = frozen_balances or {}
 
-    def build_balance_diff(self, coin_type, active_diff=0, frozen_diff=0):
-        old_active = self.active_balances.get(coin_type, Decimal('0'))
-        old_frozen = self.frozen_balances.get(coin_type, Decimal('0'))
+    def build_balance_diff(self, coin_type, active_diff=0, frozen_diff=0, old_active=None, old_frozen=None):
+        old_active = old_active or self.active_balances.get(coin_type, Decimal('0'))
+        old_frozen = old_frozen or self.frozen_balances.get(coin_type, Decimal('0'))
         new_active = old_active + active_diff
         new_frozen = old_frozen + frozen_diff
         if new_active < 0 or new_frozen < 0:
@@ -133,18 +133,27 @@ class Order(Entity):
                 frozen_diff = freeze_amount)
         return balance_diff
 
-    def build_balance_diffs_for_deal(self, account, deal):
-        return [
-            account.build_balance_diff(self.income_type,  active_diff = deal.income_amount),
-            account.build_balance_diff(self.outcome_type, frozen_diff = 0 - deal.outcome_amount),
-        ]
+    def build_balance_diffs_for_deal(self, account, deal, old_active=None, old_frozen=None):
+        diff1 = account.build_balance_diff(
+                self.income_type, 
+                active_diff = deal.income_amount,
+                old_active = old_active,
+                old_frozen = old_frozen)
+        diff2 = account.build_balance_diff(
+                self.outcome_type,
+                frozen_diff = 0 - deal.outcome_amount,
+                old_active = diff1.new_active,
+                old_frozen = diff1.new_frozen)
+        return (diff1, diff2)
 
-    def build_balance_diff_for_close(self, account):
+    def build_balance_diff_for_close(self, account, old_active=None, old_frozen=None):
         rest_freeze_amount = self.rest_freeze_amount
         balance_diff = account.build_balance_diff(
                 self.outcome_type,
                 active_diff = rest_freeze_amount,
-                frozen_diff = 0 - rest_freeze_amount)
+                frozen_diff = 0 - rest_freeze_amount,
+                old_active = old_active,
+                old_frozen = old_frozen)
         return balance_diff
 
 class BidOrder(Order):
@@ -215,6 +224,8 @@ class Exchange(Entity):
         assert type(bid) is BidOrder
         assert type(ask) is AskOrder
         assert bid.price >= ask.price
+        assert bid.rest_amount > 0
+        assert ask.rest_amount > 0
         timestamp = int(time.time())
         # 卖出申报价格低于即时揭示的最高买入申报价格时，以即时揭示的最高买入申报价格为成交价。
         # 买入申报价格高于即时揭示的最低卖出申报价格时，以即时揭示的最低卖出申报价格为成交价。
@@ -235,8 +246,8 @@ class Exchange(Entity):
         # 卖单收入 = 买单支出 - 卖单手续费
         bid_income = ask_outcome
         ask_income = bid_outcome_origin - ask_fee
-        bid_deal = Deal(ask.id, deal_price, deal_amount, bid_income, bid_outcome, bid_fee, timestamp)
-        ask_deal = Deal(bid.id, deal_price, deal_amount, ask_income, ask_outcome, ask_fee, timestamp)
+        bid_deal = Deal(bid.id, ask.id, deal_price, deal_amount, bid_income, bid_outcome, bid_fee, timestamp)
+        ask_deal = Deal(ask.id, bid.id, deal_price, deal_amount, ask_income, ask_outcome, ask_fee, timestamp)
         return (bid_deal, ask_deal)
 
     def _find_rbtree(self, order):

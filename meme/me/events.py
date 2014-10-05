@@ -156,8 +156,15 @@ class OrderCanceled(Event):
         exchange.dequeue(order)
 
 class OrderDealed(Event):
-    def __init__(self, revision, deal, balance_diffs):
-        pass
+    def __init__(self, revision, bid_deal, ask_deal, balance_diffs):
+        self.revision = revision
+        self.bid_deal = bid_deal
+        self.ask_deal = ask_deal
 
-    def build(self, repo, ask_order_id, bid_order_id):
+    def build(self, repo, bid_deal, ask_deal):
+        bid_order = repo.orders.find(bid_order.order_id)
+        ask_order = repo.orders.find(ask_order.order_id)
+        bid_order.build_balance_diffs_for_deal()
+
+    def apply(self):
         pass

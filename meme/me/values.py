@@ -19,6 +19,7 @@ class BalanceDiff(_BalanceDiff):
         return self.new_frozen - self.old_frozen
 
 Deal = namedtuple('Deal', [
+    'order_id',
     'pair_id',
     'price',
     'amount',
