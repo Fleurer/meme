@@ -1,6 +1,6 @@
 from .entities import Account
 from .utils import check_id
-from .errors import InvalidAccountCancel
+from .errors import CancelError
 
 class Event(object):
     def apply(self, repo):
@@ -43,7 +43,7 @@ class AccountCanceled(Event):
     def apply(self, repo):
         account = repo.accounts.get(self.account_id)
         if account and not account.is_empty():
-            raise InvalidAccountCancel("Account #%s is not empty, can not cancel" % self.account_id)
+            raise CancelError("Account #%s is not empty, can not cancel" % self.account_id)
         repo.accounts.remove(self.account_id)
 
 class AccountCredited(Event):

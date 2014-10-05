@@ -4,5 +4,8 @@ class MemeError(StandardError):
 class NotFoundError(MemeError):
     pass
 
-class InvalidAccountCancel(MemeError):
+class CancelError(MemeError):
+    pass
+
+class BalanceError(MemeError):
     pass

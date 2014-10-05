@@ -4,7 +4,7 @@ import collections
 from decimal import Decimal, ROUND_DOWN
 import rbtree
 from pybloom import ScalableBloomFilter
-from .errors import NotFoundError
+from .errors import NotFoundError, BalanceError
 from .values import Deal, BalanceDiff
 from .consts import PRECISION_EXP
 
@@ -65,8 +65,8 @@ class Account(object):
         old_frozen = self.frozen_balances.get(coin_type, Decimal('0'))
         new_active = old_active + active_diff
         new_frozen = old_frozen + frozen_diff
-        assert new_active >= 0
-        assert new_frozen >= 0
+        if new_active < 0 or new_frozen < 0:
+            raise BalanceError("Invalid new balance for %s active: %s frozen: %s" % (coin_type, new_active, new_frozen))
         return BalanceDiff(self.id, coin_type, old_active, old_frozen, new_active, new_frozen)
 
     def adjust(self, balance_diff):
