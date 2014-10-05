@@ -94,10 +94,22 @@ class AccountDebited(Event):
         repo.debits_bloom.add(self.id)
 
 class BidOrderCreated(Event):
-    def __init__(self, revision, id, account_id, exchange_id, price, amount, balance_diffs):
+    def __init__(self, revision, id, account_id, coin_type, price_type, price, amount, fee_rate, balance_diff):
         self.revision = revision
         self.account_id = account_id
-        self.exchange_id = exchange_id
+        self.coin_type = coin_type
+        self.price_type = price_type
+        self.price = price
+        self.amount = amount
+        self.fee_rate = fee_rate
+        self.balance_diff = balance_diff
+
+    @classmethod
+    def build(cls, repo, id, account_id, coin_type, price_type, price, amount, fee_rate):
+        pass
+
+    def apply(self):
+        pass
 
 class AskOrderCreated(Event):
     def __init__(self, revision, id, account_id, exchange_id, price, amount, balance_diffs):
