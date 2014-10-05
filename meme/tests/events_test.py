@@ -24,3 +24,10 @@ class TestAccountEvents(unittest.TestCase):
         with self.assertRaises(InvalidAccountCancel):
             self.repo.commit(AccountCanceled.build(self.repo, '123'))
         self.assertEqual(self.repo.accounts.get('123').active_balances['btc'], 100)
+
+    def test_create_credit_then_create(self):
+        self.repo.commit(AccountCreated.build(self.repo, '123'))
+        self.repo.accounts.find('123')
+        self.repo.commit(AccountCredited.build(self.repo, '123', 'btc', 100))
+        self.repo.commit(AccountCreated.build(self.repo, '123'))
+        self.assertEqual(self.repo.accounts.get('123').active_balances['btc'], 100)
