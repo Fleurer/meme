@@ -111,11 +111,11 @@ class Order(Entity):
 
     @property
     def rest_amount(self):
-        return self.amount - sum([d.amount for d in self.deals])
+        return (self.amount - sum([d.amount for d in self.deals])).quantize(PRECISION_EXP)
 
     @property
     def rest_freeze_amount(self):
-        return self.freeze_amount - sum([d.outcome for d in self.deals])
+        return (self.freeze_amount - sum([d.outcome for d in self.deals])).quantize(PRECISION_EXP)
 
     def is_completed(self):
         return self.rest_amount == 0
