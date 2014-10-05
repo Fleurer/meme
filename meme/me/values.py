@@ -49,6 +49,9 @@ class BalanceDiff(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __repr__(self):
+        return "BalanceDiff(old_active=%s, old_frozen=%s, new_active=%s, new_frozen=%s)" % (self.old_active, self.old_frozen, self.new_active, self.new_frozen)
+
     @property
     def active_diff(self):
         return self.new_active - self.old_active
