@@ -2,7 +2,7 @@ import unittest
 from decimal import Decimal
 from collections import namedtuple, deque
 from meme.me.entities import Repository, EntitiesSet, AskOrder, BidOrder, Exchange, Account
-from meme.me.events import AccountCredited, AccountCreated, AccountCanceled
+from meme.me.events import AccountCredited, AccountDebited, AccountCreated, AccountCanceled
 from meme.me.errors import NotFoundError, InvalidAccountCancel
 
 class TestAccountEvents(unittest.TestCase):
@@ -31,3 +31,10 @@ class TestAccountEvents(unittest.TestCase):
         self.repo.commit(AccountCredited.build(self.repo, '123', 'btc', 100))
         self.repo.commit(AccountCreated.build(self.repo, '123'))
         self.assertEqual(self.repo.accounts.get('123').active_balances['btc'], 100)
+
+    def test_create_credit_then_debit(self):
+        self.repo.commit(AccountCreated.build(self.repo, '123'))
+        self.repo.accounts.find('123')
+        self.repo.commit(AccountCredited.build(self.repo, '123', 'btc', 100))
+        self.repo.commit(AccountDebited.build(self.repo, '123', 'btc', 90))
+        self.assertEqual(self.repo.accounts.get('123').active_balances['btc'], 10)
