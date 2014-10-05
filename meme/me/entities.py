@@ -111,6 +111,9 @@ class Order(object):
     def rest_freeze_amount(self):
         return self.freeze_amount - sum([d.outcome for d in self.deals])
 
+    def is_completed(self):
+        return self.rest_amount == 0
+
     def append_deal(self, deal):
         self.deals.append(deal)
 
