@@ -1,6 +1,7 @@
+# coding: utf-8
 from .entities import Account
 from .utils import validate_id
-from .errors import CancelError
+from .errors import CancelError, ConflictedError
 
 class Event(object):
     # 实施修改，修改前务必做完所有的检查
@@ -63,9 +64,9 @@ class AccountCredited(Event):
 
     def apply(self, repo):
         if not validate_id(self.id):
-            raise InvalidId("Invalid credit id format %s" % self.id)
+            raise ValidationError("Invalid credit id format %s" % self.id)
         if self.id in repo.credits_bloom:
-            raise InvalidId("Credit id %s is already occupied" % self.id)
+            raise ConflictedError("Credit id %s is already occupied" % self.id)
         account = repo.accounts.find(self.account_id)
         account.adjust(self.balance_diff)
         repo.credits_bloom.add(self.id)
@@ -86,9 +87,9 @@ class AccountDebited(Event):
 
     def apply(self, repo):
         if not validate_id(self.id):
-            raise InvalidId("Invalid debit id format %s" % self.id)
+            raise ValidationError("Invalid debit id format %s" % self.id)
         if self.id in repo.debits_bloom:
-            raise InvalidId("Debit id %s is already occupied" % self.id)
+            raise ConflictedError("Debit id %s is already occupied" % self.id)
         account = repo.accounts.find(self.account_id)
         account.adjust(self.balance_diff)
         repo.debits_bloom.add(self.id)
