@@ -3,6 +3,7 @@ from .utils import validate_id
 from .errors import CancelError
 
 class Event(object):
+    # 实施修改，修改前务必做完所有的检查
     def apply(self, repo):
         raise NotImplementedError
 
