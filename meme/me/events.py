@@ -210,6 +210,7 @@ class OrderDealt(Event):
         return cls(repo.revision + 1, bid_deal, ask_deal, (bid_income_revision, bid_outcome_revision), (ask_income_revision, ask_outcome_revision))
 
     def apply(self, repo):
+        # 打 cProfile 显示这里的 deepcopy 挺慢的...
         bid_order = deepcopy(repo.orders.find(self.bid_deal.order_id))
         ask_order = deepcopy(repo.orders.find(self.ask_deal.order_id))
         bid_account = deepcopy(repo.accounts.find(bid_order.account_id))
