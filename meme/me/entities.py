@@ -4,7 +4,7 @@ import collections
 from decimal import Decimal, ROUND_DOWN
 import rbtree
 from pybloom import ScalableBloomFilter
-from .errors import NotFoundError, BalanceError
+from .errors import NotFoundError, BalanceError, DealError
 from .values import Deal, BalanceRevision
 from .consts import PRECISION_EXP
 
@@ -126,6 +126,10 @@ class Order(Entity):
         return self.rest_amount == 0
 
     def append_deal(self, deal):
+        if self.rest_amount != deal.rest_amount + deal.amount:
+            raise DealError("Deal rest_amount %s mismatch" % (deal, ))
+        if self.rest_freeze_amount != deal.rest_freeze_amount + deal.outcome:
+            raise DealError("Deal rest_freeze_amount %s mismatch" % (deal, ))
         self.deals.append(deal)
 
 class BidOrder(Order):
@@ -175,6 +179,10 @@ class Exchange(Entity):
     def dequeue(self, order):
         rbtree = self._find_rbtree(order)
         self._discard(rbtree, order.price, order.id)
+
+    def dequeue_if_completed(self, order):
+        if order.is_completed():
+            self.dequeue(order)
 
     # 最高买价大于等于最低卖价
     def match(self, pop=False):

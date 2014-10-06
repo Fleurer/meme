@@ -208,5 +208,16 @@ class OrderDealed(Event):
             ask_income_revision, ask_outcome_revision = cls.build_balance_revisions(ask_income_balance, ask_outcome_balance, ask_deal)
         return cls(repo.revision + 1, bid_deal, ask_deal, (bid_income_revision, bid_outcome_revision), (ask_income_revision, ask_outcome_revision))
 
-    def apply(self):
-        pass
+    def apply(self, repo):
+        bid_order = deepcopy(repo.orders.find(bid_deal.order_id))
+        ask_order = deepcopy(repo.orders.find(ask_deal.order_id))
+        exchange = repo.exchanges.find(bid_order.exchange_id)
+        bid_account = deepcopy(repo.accounts.find(bid_order.account_id))
+        ask_account = deepcopy(repo.accounts.find(ask_order.account_id))
+        bid_order.append_deal(self.bid_deal)
+        ask_order.append_deal(self.ask_deal)
+        [bid_account.adjust(revision) for revision in self.bid_balance_revisions]
+        [ask_account.adjust(revision) for revision in self.ask_balance_revisions]
+        [exchange.dequeue_if_completed(order) for order in [bid_order, ask_order]]
+        [repo.orders.add(order) for order in [bid_order, ask_order]]
+        [repo.accounts.add(account) for account in [bid_account, ask_account]]

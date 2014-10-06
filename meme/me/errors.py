@@ -13,5 +13,8 @@ class BalanceError(MemeError):
 class ConflictedError(MemeError):
     pass
 
+class DealError(MemeError):
+    pass
+
 class ValidationError(MemeError):
     pass
