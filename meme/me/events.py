@@ -182,16 +182,30 @@ class OrderDealed(Event):
         self.ask_balance_revisions = ask_balance_revisions
 
     @classmethod
+    def build_balance_revisions(cls, income_balance, outcome_balance, deal):
+        income_revision = income_balance.build_next(
+                active_diff = deal.income_amount)
+        unfreeze_amount = deal.rest_freeze_amount if deal.rest_amount == 0 else 0
+        outcome_revision = outcome_balance.build_next(
+                active_diff = unfreeze_amount,
+                frozen_diff = 0 - deal.outcome_amount - unfreeze_amount)
+        return (income_revision, outcome_revision)
+
+    @classmethod
     def build(cls, repo, bid_deal, ask_deal):
         bid_order = repo.orders.find(bid_order.order_id)
         ask_order = repo.orders.find(ask_order.order_id)
         bid_account = repo.accounts.find(bid_order.account_id)
         ask_account = repo.accounts.find(ask_order.account_id)
-        bid_income_revision, bid_outcome_revision = bid_order.build_balance_revisions_for_deal(bid_account, bid_deal)
-        ask_income_revision, ask_outcome_revision = ask_order.build_balance_revisions_for_deal(ask_account, ask_deal)
+        bid_income_balance = bid_account.find_balance(bid_order.income_type)
+        bid_outcome_balance = bid_account.find_balance(bid_order.outcome_balance)
+        bid_income_revision, bid_outcome_revision = cls.build_balance_revisions(bid_income_balance, bid_outcome_balance, bid_deal)
         if bid_account.id == ask_account.id:
-            ask_income_revision = bid_outcome_revision.build_next(ask_income_revision.active_diff, ask_income_revision.frozen_diff)
-            ask_outcome_revision = bid_income_revision.build_next(ask_outcome_revision.active_diff, ask_outcome_revision.frozen_diff)
+            ask_income_revision, ask_outcome_revision = cls.build_balance_revisions(bid_outcome_revision, bid_income_revision, ask_deal)
+        else:
+            ask_income_balance = ask_account.find_balance(ask_order.income_type)
+            ask_outcome_balance = ask_account.find_balance(ask_order.outcome_balance)
+            ask_income_revision, ask_outcome_revision = cls.build_balance_revisions(ask_income_balance, ask_outcome_balance, ask_deal)
         return cls(repo.revision + 1, bid_deal, ask_deal, (bid_income_revision, bid_outcome_revision), (ask_income_revision, ask_outcome_revision))
 
     def apply(self):

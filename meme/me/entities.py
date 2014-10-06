@@ -128,17 +128,6 @@ class Order(Entity):
     def append_deal(self, deal):
         self.deals.append(deal)
 
-    def build_balance_revisions_for_deal(self, account, deal):
-        income_balance = account.find_balance(self.income_type)
-        income_revision = income_balance.build_next(
-                active_diff = deal.income_amount)
-        unfreeze_amount = deal.rest_freeze_amount if deal.rest_amount == 0 else 0
-        outcome_balance = account.find_balance(self.outcome_type)
-        outcome_revision = outcome_balance.build_next(
-                active_diff = unfreeze_amount,
-                frozen_diff = 0 - deal.outcome_amount - unfreeze_amount)
-        return (income_revision, outcome_revision)
-
 class BidOrder(Order):
     @property
     def income_type(self):
