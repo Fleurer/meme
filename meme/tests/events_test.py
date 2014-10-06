@@ -170,19 +170,27 @@ class TestOrderDealt(unittest.TestCase):
 
     def test_deal_from_different_account_with_benchmark1(self):
         timestamp_start = float(time.time())
-        for i in range(1000):
+        for i in range(100):
             self.repo.commit(OrderCreated.build(self.repo, 'ask%d'%i, AskOrder, 'account1', 'ltc', 'btc', price=0.1, amount=0.01, fee_rate=0.01, timestamp=i))
-        for i in range(1000):
+        for i in range(100):
             self.repo.commit(OrderCreated.build(self.repo, 'bid%d'%i, BidOrder, 'account2', 'ltc', 'btc', price=0.1, amount=0.01, fee_rate=0.01, timestamp=i))
         seconds = float(time.time()) - timestamp_start
         timestamp_start = float(time.time())
-        for i in range(1000):
+        for i in range(100):
             bid_deal, ask_deal = self.exchange.match_and_compute_deals(self.repo)
             self.repo.commit(OrderDealt.build(self.repo, bid_deal, ask_deal))
         seconds = float(time.time()) - timestamp_start
-        self.assertTrue(seconds < 2)
+        self.assertTrue(seconds < 0.2)
         exchange = self.repo.exchanges.find('ltc-btc')
         self.assertTrue(exchange.is_empty())
+        account1 = self.repo.accounts.find('account1')
+        account2 = self.repo.accounts.find('account2')
+        btcbalance1, ltcbalance1 = account1.find_balances(['btc', 'ltc'])
+        btcbalance2, ltcbalance2 = account2.find_balances(['btc', 'ltc'])
+        self.assertEqual((float(btcbalance1.frozen), float(btcbalance2.frozen)), (0, 0))
+        self.assertEqual((float(ltcbalance1.frozen), float(ltcbalance2.frozen)), (0, 0))
+        self.assertEqual((float(ltcbalance1.active + ltcbalance2.active - 200)), 0)
+        self.assertEqual((float(btcbalance1.active + btcbalance2.active - 200)), -0.002)
 
 if __name__ == '__main__':
     unittest.main()
