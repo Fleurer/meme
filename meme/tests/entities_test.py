@@ -93,7 +93,7 @@ class TestExchange(unittest.TestCase):
         self.exchange.enqueue(AskOrder(7, 1, 'ltc', 'btc', price=0.3, amount=1))
         self.assertEqual(self.exchange.match(pop=True), (3, 5))
         self.assertEqual(self.exchange.match(pop=True), (4, 6))
-        self.assertEqual(self.exchange.match(pop=True), None)
+        self.assertEqual(self.exchange.match(pop=True), (None, None))
 
 class TestAccount(unittest.TestCase):
     def test_is_empty(self):

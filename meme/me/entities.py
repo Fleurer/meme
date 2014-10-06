@@ -85,9 +85,9 @@ class Account(Entity):
         coin_type = revision.coin_type
         balance = self.find_balance(coin_type)
         if balance.active != revision.old_active:
-            raise BalanceError("BalanceRevision old_active mismatch")
+            raise BalanceError("BalanceRevision old_active mismatch, expected %s, but got %s" % (balance.active, revision.old_active))
         if balance.frozen != revision.old_frozen:
-            raise BalanceError("BalanceRevision old_frozen mismatch")
+            raise BalanceError("BalanceRevision old_frozen mismatch: expected %s, but got %s" % (balance.frozen, revision.old_frozen))
         if revision.active < 0 or revision.frozen < 0:
             raise BalanceError("invalid BalanceRevision %s" % balance_revision)
         self.balances[coin_type] = revision
@@ -197,7 +197,7 @@ class Exchange(Entity):
                 self._discard(self.bids, bid_price, bid_id)
                 self._discard(self.asks, ask_price, ask_id)
             return (bid_id, ask_id)
-        return None
+        return (None, None)
 
     @classmethod
     def compute_deals(cls, bid, ask):
@@ -234,6 +234,14 @@ class Exchange(Entity):
         bid_deal = Deal(bid.id, ask.id, deal_price, deal_amount, bid_rest_amount, bid_rest_freeze_amount, bid_income, bid_outcome, bid_fee, timestamp)
         ask_deal = Deal(ask.id, bid.id, deal_price, deal_amount, ask_rest_amount, ask_rest_freeze_amount, ask_income, ask_outcome, ask_fee, timestamp)
         return (bid_deal, ask_deal)
+
+    def match_and_compute_deals(self, repo):
+        bid_id, ask_id = self.match()
+        if not bid_id or not ask_id:
+            return (None, None)
+        bid = repo.orders.find(bid_id)
+        ask = repo.orders.find(ask_id)
+        return Exchange.compute_deals(bid, ask)
 
     def _find_rbtree(self, order):
         if order.exchange_id != self.id:

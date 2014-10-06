@@ -185,33 +185,33 @@ class OrderDealed(Event):
     @classmethod
     def build_balance_revisions(cls, income_balance, outcome_balance, deal):
         income_revision = income_balance.build_next(
-                active_diff = deal.income_amount)
+                active_diff = deal.income)
         unfreeze_amount = deal.rest_freeze_amount if deal.rest_amount == 0 else 0
         outcome_revision = outcome_balance.build_next(
                 active_diff = unfreeze_amount,
-                frozen_diff = 0 - deal.outcome_amount - unfreeze_amount)
+                frozen_diff = 0 - deal.outcome - unfreeze_amount)
         return (income_revision, outcome_revision)
 
     @classmethod
     def build(cls, repo, bid_deal, ask_deal):
-        bid_order = repo.orders.find(bid_order.order_id)
-        ask_order = repo.orders.find(ask_order.order_id)
+        bid_order = repo.orders.find(bid_deal.order_id)
+        ask_order = repo.orders.find(ask_deal.order_id)
         bid_account = repo.accounts.find(bid_order.account_id)
         ask_account = repo.accounts.find(ask_order.account_id)
         bid_income_balance = bid_account.find_balance(bid_order.income_type)
-        bid_outcome_balance = bid_account.find_balance(bid_order.outcome_balance)
+        bid_outcome_balance = bid_account.find_balance(bid_order.outcome_type)
         bid_income_revision, bid_outcome_revision = cls.build_balance_revisions(bid_income_balance, bid_outcome_balance, bid_deal)
         if bid_account.id == ask_account.id:
             ask_income_revision, ask_outcome_revision = cls.build_balance_revisions(bid_outcome_revision, bid_income_revision, ask_deal)
         else:
             ask_income_balance = ask_account.find_balance(ask_order.income_type)
-            ask_outcome_balance = ask_account.find_balance(ask_order.outcome_balance)
+            ask_outcome_balance = ask_account.find_balance(ask_order.outcome_type)
             ask_income_revision, ask_outcome_revision = cls.build_balance_revisions(ask_income_balance, ask_outcome_balance, ask_deal)
         return cls(repo.revision + 1, bid_deal, ask_deal, (bid_income_revision, bid_outcome_revision), (ask_income_revision, ask_outcome_revision))
 
     def apply(self, repo):
-        bid_order = deepcopy(repo.orders.find(bid_deal.order_id))
-        ask_order = deepcopy(repo.orders.find(ask_deal.order_id))
+        bid_order = deepcopy(repo.orders.find(self.bid_deal.order_id))
+        ask_order = deepcopy(repo.orders.find(self.ask_deal.order_id))
         bid_account = deepcopy(repo.accounts.find(bid_order.account_id))
         ask_account = deepcopy(repo.accounts.find(ask_order.account_id))
         exchange = repo.exchanges.find(bid_order.exchange_id)
