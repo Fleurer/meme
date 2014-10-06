@@ -187,6 +187,9 @@ class Exchange(Entity):
         if order.is_completed():
             self.dequeue(order)
 
+    def is_empty(self):
+        return self.bids == rbtree.rbtree() and self.asks == rbtree.rbtree()
+
     # 最高买价大于等于最低卖价
     def match(self, pop=False):
         bid_price = self.bids.max()

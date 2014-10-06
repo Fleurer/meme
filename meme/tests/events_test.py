@@ -1,4 +1,5 @@
 import unittest
+import time
 from copy import deepcopy
 from decimal import Decimal
 from collections import namedtuple, deque
@@ -167,6 +168,21 @@ class TestOrderDealt(unittest.TestCase):
         self.assertEqual(float(ltcbalance2.frozen), 0)
         self.assertEqual(float(btcbalance2.frozen), 0.0202)
 
+    def test_deal_from_different_account_with_benchmark1(self):
+        timestamp_start = float(time.time())
+        for i in range(1000):
+            self.repo.commit(OrderCreated.build(self.repo, 'ask%d'%i, AskOrder, 'account1', 'ltc', 'btc', price=0.1, amount=0.01, fee_rate=0.01, timestamp=i))
+        for i in range(1000):
+            self.repo.commit(OrderCreated.build(self.repo, 'bid%d'%i, BidOrder, 'account2', 'ltc', 'btc', price=0.1, amount=0.01, fee_rate=0.01, timestamp=i))
+        seconds = float(time.time()) - timestamp_start
+        timestamp_start = float(time.time())
+        for i in range(1000):
+            bid_deal, ask_deal = self.exchange.match_and_compute_deals(self.repo)
+            self.repo.commit(OrderDealt.build(self.repo, bid_deal, ask_deal))
+        seconds = float(time.time()) - timestamp_start
+        self.assertTrue(seconds < 2)
+        exchange = self.repo.exchanges.find('ltc-btc')
+        self.assertTrue(exchange.is_empty())
 
 if __name__ == '__main__':
     unittest.main()
