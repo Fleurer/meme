@@ -137,10 +137,11 @@ class OrderCreated(Event):
     def apply(self, repo):
         account = repo.accounts.find(self.order.account_id)
         exchange = repo.exchanges.find(self.order.exchange_id)
-        if repo.orders.get(self.order.id):
+        if self.order.id in repo.orders_bloom:
             raise ConflictedError("Order %s already created" % self.order.id)
         order = deepcopy(self.order)
         account.adjust(self.balance_revision)
+        repo.orders_bloom.add(order.id)
         repo.orders.add(order)
         exchange.enqueue(order)
 
@@ -211,9 +212,9 @@ class OrderDealed(Event):
     def apply(self, repo):
         bid_order = deepcopy(repo.orders.find(bid_deal.order_id))
         ask_order = deepcopy(repo.orders.find(ask_deal.order_id))
-        exchange = repo.exchanges.find(bid_order.exchange_id)
         bid_account = deepcopy(repo.accounts.find(bid_order.account_id))
         ask_account = deepcopy(repo.accounts.find(ask_order.account_id))
+        exchange = repo.exchanges.find(bid_order.exchange_id)
         bid_order.append_deal(self.bid_deal)
         ask_order.append_deal(self.ask_deal)
         [bid_account.adjust(revision) for revision in self.bid_balance_revisions]
