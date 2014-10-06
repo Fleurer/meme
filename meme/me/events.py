@@ -214,7 +214,10 @@ class OrderDealt(Event):
         bid_order = deepcopy(repo.orders.find(self.bid_deal.order_id))
         ask_order = deepcopy(repo.orders.find(self.ask_deal.order_id))
         bid_account = deepcopy(repo.accounts.find(bid_order.account_id))
-        ask_account = deepcopy(repo.accounts.find(ask_order.account_id))
+        if ask_order.account_id != bid_order.account_id:
+            ask_account = deepcopy(repo.accounts.find(ask_order.account_id))
+        else:
+            ask_account = bid_account
         exchange = repo.exchanges.find(bid_order.exchange_id)
         bid_order.append_deal(self.bid_deal)
         ask_order.append_deal(self.ask_deal)
