@@ -145,5 +145,28 @@ class TestOrderDealt(unittest.TestCase):
         ask3 = self.repo.orders.find('ask3')
         self.assertEqual(float(ask3.rest_freeze_amount), 0.2)
 
+    def test_deal_from_different_account2(self):
+        self.repo.commit(OrderCreated.build(self.repo, 'ask1', AskOrder, 'account1', 'ltc', 'btc', price=0.1, amount=1, fee_rate=0.01, timestamp=1))
+        self.repo.commit(OrderCreated.build(self.repo, 'bid1', BidOrder, 'account2', 'ltc', 'btc', price=0.1, amount=0.4, fee_rate=0.01, timestamp=2))
+        self.repo.commit(OrderCreated.build(self.repo, 'bid2', BidOrder, 'account2', 'ltc', 'btc', price=0.1, amount=0.4, fee_rate=0.01, timestamp=3))
+        self.repo.commit(OrderCreated.build(self.repo, 'bid3', BidOrder, 'account2', 'ltc', 'btc', price=0.1, amount=0.4, fee_rate=0.01, timestamp=4))
+        bid_deal, ask_deal = self.exchange.match_and_compute_deals(self.repo)
+        self.repo.commit(OrderDealt.build(self.repo, bid_deal, ask_deal))
+        bid_deal, ask_deal = self.exchange.match_and_compute_deals(self.repo)
+        self.repo.commit(OrderDealt.build(self.repo, bid_deal, ask_deal))
+        bid_deal, ask_deal = self.exchange.match_and_compute_deals(self.repo)
+        self.repo.commit(OrderDealt.build(self.repo, bid_deal, ask_deal))
+        bid_deal, ask_deal = self.exchange.match_and_compute_deals(self.repo)
+        self.assertFalse(bid_deal and ask_deal)
+        account1 = self.repo.accounts.find('account1')
+        account2 = self.repo.accounts.find('account2')
+        btcbalance1, ltcbalance1 = account1.find_balances(['btc', 'ltc'])
+        btcbalance2, ltcbalance2 = account2.find_balances(['btc', 'ltc'])
+        self.assertEqual(float(200 - btcbalance1.active - btcbalance2.active), 0.0222)
+        self.assertEqual(float(200 - ltcbalance1.active - ltcbalance2.active), 0)
+        self.assertEqual(float(ltcbalance2.frozen), 0)
+        self.assertEqual(float(btcbalance2.frozen), 0.0202)
+
+
 if __name__ == '__main__':
     unittest.main()

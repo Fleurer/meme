@@ -191,6 +191,8 @@ class Exchange(Entity):
     def match(self, pop=False):
         bid_price = self.bids.max()
         ask_price = self.asks.min()
+        if not bid_price or not ask_price:
+            return (None, None)
         if bid_price >= ask_price:
             bids_queue = self.bids[bid_price]
             asks_queue = self.asks[ask_price]
