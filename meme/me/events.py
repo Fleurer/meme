@@ -60,8 +60,9 @@ class AccountCredited(Event):
     @classmethod
     def build(cls, repo, id, account_id, coin_type, amount):
         account = repo.accounts.find(account_id)
-        balance_diff = account.build_balance_diff(coin_type, active_diff=amount)
-        return cls(repo.revision + 1, id, account_id, coin_type, balance_diff)
+        balance = account.find_balance(coin_type)
+        balance_revision = balance.build_next(active_diff=amount)
+        return cls(repo.revision + 1, id, account_id, coin_type, balance_revision)
 
     def apply(self, repo):
         if not validate_id(self.id):
@@ -83,8 +84,9 @@ class AccountDebited(Event):
     @classmethod
     def build(cls, repo, id, account_id, coin_type, amount):
         account = repo.accounts.find(account_id)
-        balance_diff = account.build_balance_diff(coin_type, active_diff=0-amount)
-        return cls(repo.revision + 1, id, account_id, coin_type, balance_diff)
+        balance = account.find_balance(coin_type)
+        balance_revision = balance.build_next(active_diff=0-amount)
+        return cls(repo.revision + 1, id, account_id, coin_type, balance_revision)
 
     def apply(self, repo):
         if not validate_id(self.id):

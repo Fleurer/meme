@@ -5,7 +5,7 @@ from decimal import Decimal, ROUND_DOWN
 import rbtree
 from pybloom import ScalableBloomFilter
 from .errors import NotFoundError, BalanceError
-from .values import Deal, BalanceDiff, Balance
+from .values import Deal, BalanceRevision
 from .consts import PRECISION_EXP
 
 class Repository(object):
@@ -67,25 +67,30 @@ class Account(Entity):
         self.id = id
         self.balances = balances or {}
 
+    @classmethod
+    def build(cls, id, balances_map=None):
+        account = cls(id)
+        for coin_type, balance_tuple in balances_map.items():
+            active, frozen = balance_tuple
+            balance = account.find_balance(coin_type)
+            revision = balance.build_next(active, frozen)
+            account.adjust(revision)
+        return account
+
     def find_balance(self, coin_type):
-        zero_balance = Balance(Decimal(0), Decimal(0), 0)
+        zero_balance = BalanceRevision.build(self.id, coin_type)
         return self.balances.get(coin_type, zero_balance)
 
-    def build_balance_diff(self, coin_type, active_diff=0, frozen_diff=0):
+    def adjust(self, revision):
+        coin_type = revision.coin_type
         balance = self.find_balance(coin_type)
-        tmp_diff = BalanceDiff(self.id, coin_type, 0, 0, balance.active, balance.frozen)
-        return tmp_diff.build_next(active_diff, frozen_diff)
-
-    def adjust(self, balance_diff):
-        coin_type = balance_diff.coin_type
-        balance = self.find_balance(coin_type)
-        if balance.active != balance_diff.old_active:
-            raise BalanceError("BalanceDiff old_active mismatch")
-        if balance.frozen != balance_diff.old_frozen:
-            raise BalanceError("BalanceDiff old_frozen mismatch")
-        if balance_diff.new_active < 0 or balance_diff.new_frozen < 0:
-            raise BalanceError("invalid BalanceDiff %s" % balance_diff)
-        self.balances[coin_type] = Balance(balance_diff.new_active, balance_diff.new_frozen, balance.revision + 1)
+        if balance.active != revision.old_active:
+            raise BalanceError("BalanceRevision old_active mismatch")
+        if balance.frozen != revision.old_frozen:
+            raise BalanceError("BalanceRevision old_frozen mismatch")
+        if revision.active < 0 or revision.frozen < 0:
+            raise BalanceError("invalid BalanceRevision %s" % balance_revision)
+        self.balances[coin_type] = revision
 
     def is_empty(self):
         for b in self.balances.values():
@@ -125,27 +130,23 @@ class Order(Entity):
 
     def build_balance_diff_for_create(self, account):
         freeze_amount = self.freeze_amount
-        balance_diff = account.build_balance_diff(
-                self.outcome_type,
+        balance = account.find_balance(self.outcome_type)
+        return balance.build_next(
                 active_diff = 0 - freeze_amount,
                 frozen_diff = freeze_amount)
-        return balance_diff
 
     def build_balance_diffs_for_deal(self, account, deal):
-        income_diff = account.build_balance_diff(
-                self.income_type, 
+        income_diff = account.find_balance(self.income_type).build_next(
                 active_diff = deal.income_amount)
         unfreeze_amount = deal.rest_freeze_amount if deal.rest_amount == 0 else 0
-        outcome_diff = account.build_balance_diff(
-                self.outcome_type,
+        outcome_diff = account.find_balance(self.outcome_type).build_next(
                 active_diff = unfreeze_amount,
                 frozen_diff = 0 - deal.outcome_amount - unfreeze_amount)
         return (income_diff, outcome_diff)
 
     def build_balance_diff_for_close(self, account):
         rest_freeze_amount = self.rest_freeze_amount
-        balance_diff = account.build_balance_diff(
-                self.outcome_type,
+        balance_diff = account.find_balance(self.outcome_type).build_next(
                 active_diff = rest_freeze_amount,
                 frozen_diff = 0 - rest_freeze_amount)
         return balance_diff

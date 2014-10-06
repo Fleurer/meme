@@ -2,7 +2,7 @@ import unittest
 from decimal import Decimal
 from collections import namedtuple, deque
 from meme.me.entities import EntitiesSet, AskOrder, BidOrder, Exchange, Account
-from meme.me.values import Balance
+from meme.me.values import BalanceRevision
 from meme.me.errors import NotFoundError
 
 class TestEntitiesSet(unittest.TestCase):
@@ -97,9 +97,9 @@ class TestExchange(unittest.TestCase):
 
 class TestAccount(unittest.TestCase):
     def test_is_empty(self):
-        account = Account('account1', {'btc': Balance(1), 'ltc': Balance(0) })
+        account = Account.build('account1', {'btc': (10, 0), 'ltc': (0, 0)})
         self.assertTrue(not account.is_empty())
-        account = Account('account1', {'btc': Balance(0), 'ltc': Balance(0) })
+        account = Account.build('account1', {'btc': (0, 0), 'ltc': (0, 0) })
         self.assertTrue(account.is_empty())
         account = Account('account2')
         self.assertTrue(account.is_empty())
@@ -141,7 +141,7 @@ class TestOrder(unittest.TestCase):
         self.assertEqual(float(bid.rest_freeze_amount), 0.1001)
 
     def test_compute_balance_diff_for_create(self):
-        account = Account('account1', {'btc': Balance(10), 'ltc': Balance(10) })
+        account = Account.build('account1', {'btc': (10, 0), 'ltc': (10, 0) })
         bid = BidOrder('bid1', 'account1', 'ltc', 'btc', price=0.3, amount=1, fee_rate=0.001, timestamp = 2)
         balance_diff = bid.build_balance_diff_for_create(account)
         account.adjust(balance_diff)
