@@ -50,12 +50,12 @@ class AccountCanceled(Event):
         repo.accounts.remove(self.account_id)
 
 class AccountCredited(Event):
-    def __init__(self, revision, id, account_id, coin_type, balance_diff):
+    def __init__(self, revision, id, account_id, coin_type, balance_revision):
         self.id = id
         self.revision = revision
         self.account_id = account_id
         self.coin_type = coin_type
-        self.balance_diff = balance_diff
+        self.balance_revision = balance_revision
 
     @classmethod
     def build(cls, repo, id, account_id, coin_type, amount):
@@ -70,16 +70,16 @@ class AccountCredited(Event):
         if self.id in repo.credits_bloom:
             raise ConflictedError("Credit id %s is already occupied" % self.id)
         account = repo.accounts.find(self.account_id)
-        account.adjust(self.balance_diff)
+        account.adjust(self.balance_revision)
         repo.credits_bloom.add(self.id)
 
 class AccountDebited(Event):
-    def __init__(self, revision, id, account_id, coin_type, balance_diff):
+    def __init__(self, revision, id, account_id, coin_type, balance_revision):
         self.id = id
         self.revision = revision
         self.account_id = account_id
         self.coin_type = coin_type
-        self.balance_diff = balance_diff
+        self.balance_revision = balance_revision
 
     @classmethod
     def build(cls, repo, id, account_id, coin_type, amount):
@@ -94,7 +94,7 @@ class AccountDebited(Event):
         if self.id in repo.debits_bloom:
             raise ConflictedError("Debit id %s is already occupied" % self.id)
         account = repo.accounts.find(self.account_id)
-        account.adjust(self.balance_diff)
+        account.adjust(self.balance_revision)
         repo.debits_bloom.add(self.id)
 
 class ExchangeCreated(Event):
@@ -114,17 +114,17 @@ class ExchangeCreated(Event):
             repo.exchanges.add(exchange)
 
 class OrderCreated(Event):
-    def __init__(self, revision, order, balance_diff):
+    def __init__(self, revision, order, balance_revision):
         self.revision = revision
         self.order = deepcopy(order)
-        self.balance_diff = balance_diff
+        self.balance_revision = balance_revision
 
     @classmethod
     def build(cls, repo, id, klass, account_id, coin_type, price_type, price, amount, fee_rate):
         account = repo.accounts.find(account_id)
         order = klass(id, account_id, coin_type, price_type, price, amount, fee_rate)
-        balance_diff = order.build_balance_diff_for_create(account)
-        return cls(repo.revision + 1, order, balance_diff)
+        balance_revision = order.build_balance_diff_for_create(account)
+        return cls(repo.revision + 1, order, balance_revision)
 
     def apply(self, repo):
         account = repo.accounts.find(self.order.account_id)
@@ -132,28 +132,28 @@ class OrderCreated(Event):
         if repo.orders.get(self.order.id):
             raise ConflictedError("Order %s already created" % self.order.id)
         order = deepcopy(self.order)
-        account.adjust(self.balance_diff)
+        account.adjust(self.balance_revision)
         repo.orders.add(order)
         exchange.enqueue(order)
 
 class OrderCanceled(Event):
-    def __init__(self, revision, order_id, balance_diff):
+    def __init__(self, revision, order_id, balance_revision):
         self.revision = revision
         self.order_id = order_id
-        self.balance_diff = balance_diff
+        self.balance_revision = balance_revision
 
     @classmethod
     def build(cls, repo, order_id):
         order = repo.orders.find(order_id)
         account = repo.accounts.find(order.account_id)
-        balance_diff = order.build_balance_diff_for_close(account)
-        return cls(repo.revision + 1, order_id, balance_diff)
+        balance_revision = order.build_balance_diff_for_close(account)
+        return cls(repo.revision + 1, order_id, balance_revision)
 
     def apply(self, repo):
         order = repo.orders.find(self.order_id)
         exchange = repo.exchanges.find(order.exchange_id)
         account = repo.accounts.find(order.account_id)
-        account.adjust(self.balance_diff)
+        account.adjust(self.balance_revision)
         repo.orders.remove(order.id)
         exchange.dequeue(order)
 
