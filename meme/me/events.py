@@ -123,7 +123,7 @@ class OrderCreated(Event):
     def build(cls, repo, id, klass, account_id, coin_type, price_type, price, amount, fee_rate):
         account = repo.accounts.find(account_id)
         order = klass(id, account_id, coin_type, price_type, price, amount, fee_rate)
-        balance_revision = order.build_balance_diff_for_create(account)
+        balance_revision = order.build_balance_revision_for_create(account)
         return cls(repo.revision + 1, order, balance_revision)
 
     def apply(self, repo):
@@ -146,7 +146,7 @@ class OrderCanceled(Event):
     def build(cls, repo, order_id):
         order = repo.orders.find(order_id)
         account = repo.accounts.find(order.account_id)
-        balance_revision = order.build_balance_diff_for_close(account)
+        balance_revision = order.build_balance_revision_for_close(account)
         return cls(repo.revision + 1, order_id, balance_revision)
 
     def apply(self, repo):
@@ -158,12 +158,12 @@ class OrderCanceled(Event):
         exchange.dequeue(order)
 
 class OrderDealed(Event):
-    def __init__(self, revision, bid_deal, ask_deal, bid_balance_diffs, ask_balance_diffs):
+    def __init__(self, revision, bid_deal, ask_deal, bid_balance_revisions, ask_balance_revisions):
         self.revision = revision
         self.bid_deal = bid_deal
         self.ask_deal = ask_deal
-        self.bid_balance_diffs = bid_balance_diffs
-        self.ask_balance_diffs = ask_balance_diffs
+        self.bid_balance_revisions = bid_balance_revisions
+        self.ask_balance_revisions = ask_balance_revisions
 
     @classmethod
     def build(cls, repo, bid_deal, ask_deal):
@@ -171,12 +171,12 @@ class OrderDealed(Event):
         ask_order = repo.orders.find(ask_order.order_id)
         bid_account = repo.accounts.find(bid_order.account_id)
         ask_account = repo.accounts.find(ask_order.account_id)
-        bid_income_diff, bid_outcome_diff = bid_order.build_balance_diffs_for_deal(bid_account, bid_deal)
-        ask_income_diff, ask_outcome_diff = ask_order.build_balance_diffs_for_deal(ask_account, ask_deal)
+        bid_income_revision, bid_outcome_revision = bid_order.build_balance_revisions_for_deal(bid_account, bid_deal)
+        ask_income_revision, ask_outcome_revision = ask_order.build_balance_revisions_for_deal(ask_account, ask_deal)
         if bid_account.id == ask_account.id:
-            ask_income_diff = bid_outcome_diff.build_next(ask_income_diff.active_diff, ask_income_diff.frozen_diff)
-            ask_outcome_diff = bid_income_diff.build_next(ask_outcome_diff.active_diff, ask_outcome_diff.frozen_diff)
-        return cls(repo.revision + 1, bid_deal, ask_deal, (bid_income_diff, bid_outcome_diff), (ask_income_diff, ask_outcome_diff))
+            ask_income_revision = bid_outcome_revision.build_next(ask_income_revision.active_diff, ask_income_revision.frozen_diff)
+            ask_outcome_revision = bid_income_revision.build_next(ask_outcome_revision.active_diff, ask_outcome_revision.frozen_diff)
+        return cls(repo.revision + 1, bid_deal, ask_deal, (bid_income_revision, bid_outcome_revision), (ask_income_revision, ask_outcome_revision))
 
     def apply(self):
         pass

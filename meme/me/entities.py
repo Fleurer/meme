@@ -128,28 +128,30 @@ class Order(Entity):
     def append_deal(self, deal):
         self.deals.append(deal)
 
-    def build_balance_diff_for_create(self, account):
+    def build_balance_revision_for_create(self, account):
         freeze_amount = self.freeze_amount
         balance = account.find_balance(self.outcome_type)
         return balance.build_next(
                 active_diff = 0 - freeze_amount,
                 frozen_diff = freeze_amount)
 
-    def build_balance_diffs_for_deal(self, account, deal):
-        income_diff = account.find_balance(self.income_type).build_next(
+    def build_balance_revisions_for_deal(self, account, deal):
+        income_balance = account.find_balance(self.income_type)
+        income_revision = income_balance.build_next(
                 active_diff = deal.income_amount)
         unfreeze_amount = deal.rest_freeze_amount if deal.rest_amount == 0 else 0
-        outcome_diff = account.find_balance(self.outcome_type).build_next(
+        outcome_balance = account.find_balance(self.outcome_type)
+        outcome_revision = outcome_balance.build_next(
                 active_diff = unfreeze_amount,
                 frozen_diff = 0 - deal.outcome_amount - unfreeze_amount)
-        return (income_diff, outcome_diff)
+        return (income_revision, outcome_revision)
 
-    def build_balance_diff_for_close(self, account):
+    def build_balance_revision_for_close(self, account):
         rest_freeze_amount = self.rest_freeze_amount
-        balance_diff = account.find_balance(self.outcome_type).build_next(
+        balance = account.find_balance(self.outcome_type)
+        return balance.build_next(
                 active_diff = rest_freeze_amount,
                 frozen_diff = 0 - rest_freeze_amount)
-        return balance_diff
 
 class BidOrder(Order):
     @property
