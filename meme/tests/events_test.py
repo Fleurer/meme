@@ -73,5 +73,23 @@ class TestOrderEvents(unittest.TestCase):
         self.assertEqual(repo_bak.accounts, self.repo.accounts)
         self.assertEqual(repo_bak.exchanges, self.repo.exchanges)
 
+    def test_compute_balance_revision_for_create(self):
+        account = Account.build('account1', {'btc': (10, 0), 'ltc': (10, 0) })
+        bid = BidOrder('bid1', 'account1', 'ltc', 'btc', price=0.3, amount=1, fee_rate=0.001, timestamp = 2)
+        balance_revision = OrderCreated.build_balance_revision(account, bid)
+        account.adjust(balance_revision)
+        self.assertEqual(float(balance_revision.old_active), 10)
+        self.assertEqual(float(balance_revision.new_active), 9.6997)
+        self.assertEqual(float(balance_revision.new_frozen), 0.3003)
+        self.assertEqual(balance_revision.active_diff, 0-bid.freeze_amount)
+        self.assertEqual(balance_revision.frozen_diff, bid.freeze_amount)
+        balance_revision = OrderCanceled.build_balance_revision(account, bid)
+        account.adjust(balance_revision)
+        self.assertEqual(float(balance_revision.old_active), 9.6997)
+        self.assertEqual(float(balance_revision.new_active), 10)
+        self.assertEqual(float(balance_revision.new_frozen), 0)
+        self.assertEqual(balance_revision.active_diff, bid.freeze_amount)
+        self.assertEqual(balance_revision.frozen_diff, 0 - bid.freeze_amount)
+
 if __name__ == '__main__':
     unittest.main()

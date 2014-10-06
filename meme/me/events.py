@@ -123,8 +123,16 @@ class OrderCreated(Event):
     def build(cls, repo, id, klass, account_id, coin_type, price_type, price, amount, fee_rate):
         account = repo.accounts.find(account_id)
         order = klass(id, account_id, coin_type, price_type, price, amount, fee_rate)
-        balance_revision = order.build_balance_revision_for_create(account)
+        balance_revision = cls.build_balance_revision(account, order)
         return cls(repo.revision + 1, order, balance_revision)
+
+    @classmethod
+    def build_balance_revision(self, account, order):
+        freeze_amount = order.freeze_amount
+        balance = account.find_balance(order.outcome_type)
+        return balance.build_next(
+                active_diff = 0 - freeze_amount,
+                frozen_diff = freeze_amount)
 
     def apply(self, repo):
         account = repo.accounts.find(self.order.account_id)
@@ -146,8 +154,16 @@ class OrderCanceled(Event):
     def build(cls, repo, order_id):
         order = repo.orders.find(order_id)
         account = repo.accounts.find(order.account_id)
-        balance_revision = order.build_balance_revision_for_close(account)
+        balance_revision = cls.build_balance_revision(account, order)
         return cls(repo.revision + 1, order_id, balance_revision)
+
+    @classmethod
+    def build_balance_revision(self, account, order):
+        rest_freeze_amount = order.rest_freeze_amount
+        balance = account.find_balance(order.outcome_type)
+        return balance.build_next(
+                active_diff = rest_freeze_amount,
+                frozen_diff = 0 - rest_freeze_amount)
 
     def apply(self, repo):
         order = repo.orders.find(self.order_id)
