@@ -3,7 +3,7 @@ from copy import deepcopy
 from decimal import Decimal
 from collections import namedtuple, deque
 from meme.me.entities import Repository, EntitiesSet, AskOrder, BidOrder, Exchange, Account
-from meme.me.events import AccountCredited, AccountDebited, AccountCreated, AccountCanceled, ExchangeCreated, OrderCreated, OrderCanceled, OrderDealed
+from meme.me.events import AccountCredited, AccountDebited, AccountCreated, AccountCanceled, ExchangeCreated, OrderCreated, OrderCanceled, OrderDealt
 from meme.me.errors import NotFoundError, CancelError, BalanceError
 
 class TestAccountEvents(unittest.TestCase):
@@ -91,7 +91,7 @@ class TestOrderEvents(unittest.TestCase):
         self.assertEqual(balance_revision.active_diff, bid.freeze_amount)
         self.assertEqual(balance_revision.frozen_diff, 0 - bid.freeze_amount)
 
-class TestOrderDealed(unittest.TestCase):
+class TestOrderDealt(unittest.TestCase):
     def setUp(self):
         self.repo = Repository()
         self.repo.commit(ExchangeCreated.build(self.repo, 'ltc', 'btc'))
@@ -116,7 +116,7 @@ class TestOrderDealed(unittest.TestCase):
         self.assertEqual(float(ask_deal.amount), 0.4)
         self.assertEqual(float(ask_deal.rest_amount), 0)
         self.assertEqual(float(ask_deal.rest_freeze_amount), 0)
-        self.repo.commit(OrderDealed.build(self.repo, bid_deal, ask_deal))
+        self.repo.commit(OrderDealt.build(self.repo, bid_deal, ask_deal))
 
 if __name__ == '__main__':
     unittest.main()

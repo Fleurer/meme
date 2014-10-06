@@ -174,7 +174,7 @@ class OrderCanceled(Event):
         repo.orders.remove(order.id)
         exchange.dequeue(order)
 
-class OrderDealed(Event):
+class OrderDealt(Event):
     def __init__(self, revision, bid_deal, ask_deal, bid_balance_revisions, ask_balance_revisions):
         self.revision = revision
         self.bid_deal = bid_deal
