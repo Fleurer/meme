@@ -38,7 +38,7 @@ class BalanceRevision(object):
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
-        return "BalanceRevision(old_active=%s, old_frozen=%s, new_active=%s, new_frozen=%s)" % (self.old_active, self.old_frozen, self.new_active, self.new_frozen)
+        return "BalanceRevision(account_id=%s, coin_type=%s, old_active=%s, old_frozen=%s, new_active=%s, new_frozen=%s)" % (self.account_id, self.coin_type, self.old_active, self.old_frozen, self.new_active, self.new_frozen)
 
     @property
     def active_diff(self):

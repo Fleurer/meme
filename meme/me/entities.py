@@ -81,6 +81,9 @@ class Account(Entity):
         zero_balance = BalanceRevision.build(self.id, coin_type)
         return self.balances.get(coin_type, zero_balance)
 
+    def find_balances(self, coin_types):
+        return [self.find_balance(coin_type) for coin_type in coin_types]
+
     def adjust(self, revision):
         coin_type = revision.coin_type
         balance = self.find_balance(coin_type)
@@ -99,7 +102,7 @@ class Account(Entity):
         return True
 
 class Order(Entity):
-    def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, deals=None, timestamp=None):
+    def __init__(self, id, account_id, coin_type, price_type, price, amount, fee_rate=0.001, timestamp=None, deals=None):
         self.id = id
         self.account_id = account_id
         self.coin_type = coin_type

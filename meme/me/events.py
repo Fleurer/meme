@@ -120,9 +120,9 @@ class OrderCreated(Event):
         self.balance_revision = balance_revision
 
     @classmethod
-    def build(cls, repo, id, klass, account_id, coin_type, price_type, price, amount, fee_rate):
+    def build(cls, repo, id, klass, account_id, coin_type, price_type, price, amount, fee_rate, timestamp=None):
         account = repo.accounts.find(account_id)
-        order = klass(id, account_id, coin_type, price_type, price, amount, fee_rate)
+        order = klass(id, account_id, coin_type, price_type, price, amount, fee_rate, timestamp)
         balance_revision = cls.build_balance_revision(account, order)
         return cls(repo.revision + 1, order, balance_revision)
 
