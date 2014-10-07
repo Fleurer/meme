@@ -2,7 +2,7 @@
 import time
 import collections
 from decimal import Decimal, ROUND_DOWN
-import rbtree
+from bintrees import RBTree
 from pybloom import ScalableBloomFilter
 from .errors import NotFoundError, BalanceError, DealError
 from .values import Deal, BalanceRevision
@@ -166,8 +166,13 @@ class Exchange(Entity):
     def __init__(self, coin_type, price_type, bids=None, asks=None):
         self.coin_type = coin_type
         self.price_type = price_type
-        self.bids = rbtree.rbtree(bids or {})
-        self.asks = rbtree.rbtree(asks or {})
+        self.bids = RBTree(bids or {})
+        self.asks = RBTree(asks or {})
+
+    def __eq__(self, other):
+        return self.coin_type == other.coin_type and \
+                self.price_type == other.price_type and \
+                list(self.bids) == list(self.asks)
 
     @property
     def id(self):
@@ -188,13 +193,15 @@ class Exchange(Entity):
             self.dequeue(order)
 
     def is_empty(self):
-        return self.bids == rbtree.rbtree() and self.asks == rbtree.rbtree()
+        return self.bids.is_empty() and self.asks.is_empty()
 
     # 最高买价大于等于最低卖价
     def match(self, pop=False):
-        bid_price = self.bids.max()
-        ask_price = self.asks.min()
-        if not bid_price or not ask_price:
+        bid_price, ask_price = None, None
+        try:
+            bid_price = self.bids.max_key()
+            ask_price = self.asks.min_key()
+        except ValueError:
             return (None, None)
         if bid_price >= ask_price:
             bids_queue = self.bids[bid_price]
