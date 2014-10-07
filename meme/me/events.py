@@ -223,6 +223,10 @@ class OrderDealt(Event):
         ask_order.append_deal(self.ask_deal)
         [bid_account.adjust(revision) for revision in self.bid_balance_revisions]
         [ask_account.adjust(revision) for revision in self.ask_balance_revisions]
-        [exchange.dequeue_if_completed(order) for order in [bid_order, ask_order]]
-        [repo.orders.add(order) for order in [bid_order, ask_order]]
         [repo.accounts.add(account) for account in [bid_account, ask_account]]
+        for order in (bid_order, ask_order):
+            exchange.dequeue_if_completed(order)
+            if order.is_completed():
+                repo.orders.remove(order.id)
+            else:
+                repo.orders.add(order)
