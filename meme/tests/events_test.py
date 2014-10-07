@@ -195,17 +195,17 @@ class TestOrderDealt(unittest.TestCase):
     @unittest.skip
     def test_deal_from_different_account_with_benchmark2(self):
         timestamp_start = float(time.time())
-        for i in range(1000):
+        for i in range(10000):
             self.repo.commit(OrderCreated.build(self.repo, 'ask%d'%i, AskOrder, 'account1', 'ltc', 'btc', price=0.1, amount=0.01, fee_rate=0.01, timestamp=i))
-        for i in range(1000):
+        for i in range(10000):
             self.repo.commit(OrderCreated.build(self.repo, 'bid%d'%i, BidOrder, 'account2', 'ltc', 'btc', price=0.1, amount=0.01, fee_rate=0.01, timestamp=i))
         seconds = float(time.time()) - timestamp_start
         timestamp_start = float(time.time())
-        for i in range(1000):
+        for i in range(10000):
             bid_deal, ask_deal = self.exchange.match_and_compute_deals(self.repo)
             self.repo.commit(OrderDealt.build(self.repo, bid_deal, ask_deal))
         seconds = float(time.time()) - timestamp_start
-        self.assertTrue(seconds < 1)
+        print seconds
 
     def test_deal_from_same_account1(self):
         self.repo.commit(OrderCreated.build(self.repo, 'ask1', AskOrder, 'account1', 'ltc', 'btc', price=0.1, amount=1, fee_rate=0.01, timestamp=1))
